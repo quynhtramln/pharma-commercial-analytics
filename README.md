@@ -16,7 +16,7 @@ commercial team knows where to grow, where coverage is thin and which numbers to
 ![Data Quality](https://img.shields.io/badge/Data%20Quality-67%20issues%20tracked-6A1B9A)
 ![Data](https://img.shields.io/badge/Data-100%25%20synthetic-lightgrey)
 
-**[▶ Live interactive dashboard](https://YOUR-GITHUB-USERNAME.github.io/pharma-commercial-analytics/)** ·
+**[▶ Live interactive dashboard](https://quynhtramln.github.io/pharma-commercial-analytics/)** ·
 [What's inside](#7--whats-in-this-repository) · [Documentation](docs/README.md) · [SQL pipeline](sql/README.md) · [Power BI](powerbi/README.md) · [Decision log](docs/decision_log.md)
 
 ![Overview page](assets/screenshots/01_overview.png)
