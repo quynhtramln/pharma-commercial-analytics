@@ -1,0 +1,183 @@
+table fact_campaign
+	lineageTag: 9775e1ca-458a-4c57-89cf-3862291f5950
+
+	column product_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 0864e1a1-e262-4f4b-91d5-19e96e1b1a95
+		summarizeBy: none
+		sourceColumn: product_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column start_date_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 4bd12e13-59fd-4dbe-8dc8-90ff0951ba8e
+		summarizeBy: none
+		sourceColumn: start_date_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column end_date_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 91c624e3-f44c-4715-9a79-a7568e67a73c
+		summarizeBy: sum
+		sourceColumn: end_date_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column campaign_id
+		dataType: string
+		isHidden
+		lineageTag: 03c5c681-e2fd-4b26-968e-ca34ab5dedc8
+		summarizeBy: none
+		sourceColumn: campaign_id
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column Campaign
+		dataType: string
+		lineageTag: ee6d4024-59ad-451d-a65e-29059ad31913
+		summarizeBy: none
+		sourceColumn: Campaign
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Campaign Type'
+		dataType: string
+		lineageTag: e1bdb32a-2fec-416d-9bb2-b5142604ff2d
+		summarizeBy: none
+		sourceColumn: Campaign Type
+
+		annotation SummarizationSetBy = Automatic
+
+	column target_hcp_count
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 405b1188-80ff-4ddb-b3c4-34dea18dd3df
+		summarizeBy: sum
+		sourceColumn: target_hcp_count
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column budget
+		dataType: double
+		isHidden
+		lineageTag: fbebd756-ddbf-46f1-8676-fae1a4b29447
+		summarizeBy: sum
+		sourceColumn: budget
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Campaign Status'
+		dataType: string
+		lineageTag: a73a11c8-b6eb-4ce4-a85b-1c595c34fd26
+		summarizeBy: none
+		sourceColumn: Campaign Status
+
+		annotation SummarizationSetBy = Automatic
+
+	column missing_campaign_name_flag
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 848de1d6-3327-4abb-8ac7-9827801d31e5
+		summarizeBy: none
+		sourceColumn: missing_campaign_name_flag
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column missing_campaign_type_flag
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 37adec6d-a7df-4263-8151-56dc91525cb3
+		summarizeBy: none
+		sourceColumn: missing_campaign_type_flag
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column start_after_end_flag
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: e638bfd9-64a7-40fe-8a02-93427fdd3245
+		summarizeBy: none
+		sourceColumn: start_after_end_flag
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column negative_target_hcp_count_flag
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 3e086180-4202-4cd3-8f3b-793b534453f1
+		summarizeBy: none
+		sourceColumn: negative_target_hcp_count_flag
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column missing_status_flag
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 1450fdd2-5edc-46e2-8e4c-7c36dc52d59f
+		summarizeBy: none
+		sourceColumn: missing_status_flag
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column campaign_key
+		dataType: int64
+		formatString: 0
+		lineageTag: e62f692a-ed3c-4a49-95c8-d80eda530217
+		summarizeBy: sum
+		sourceColumn: campaign_key
+
+		annotation SummarizationSetBy = Automatic
+
+	partition fact_campaign = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Databases(pServer),
+				    New_Project_Healthcare_Pharma_Commercial = Source{[Name=pDatabase]}[Data],
+				    warehouse_fact_campaign = New_Project_Healthcare_Pharma_Commercial{[Schema="warehouse",Item="fact_campaign"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(warehouse_fact_campaign,{{"campaign_name", "Campaign"}, {"campaign_type", "Campaign Type"}, {"status", "Campaign Status"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

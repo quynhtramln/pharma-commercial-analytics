@@ -1,0 +1,112 @@
+table fact_event_registrations
+	lineageTag: 34653928-84b0-4308-ae9e-4cbea69185bd
+
+	column date_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: ae2f2646-f7e8-44bf-acef-a30d45239496
+		summarizeBy: none
+		sourceColumn: date_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column event_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: de422239-2c01-4d75-a8f9-9563eefb6b0c
+		summarizeBy: none
+		sourceColumn: event_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column hcp_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: f424cf27-04cf-4857-abb1-617043b57bd7
+		summarizeBy: none
+		sourceColumn: hcp_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Attendance Status'
+		dataType: string
+		lineageTag: 2573d068-5855-4d0c-afa8-434de90cbd3c
+		summarizeBy: none
+		sourceColumn: Attendance Status
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Requires Follow-up'
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 22342635-ff11-4a22-b40f-796d249eee64
+		summarizeBy: none
+		sourceColumn: Requires Follow-up
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Follow-up Status'
+		dataType: string
+		lineageTag: 8e78023c-dab0-4c45-9eb4-bdd12913bd5f
+		summarizeBy: none
+		sourceColumn: Follow-up Status
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Registration Source'
+		dataType: string
+		lineageTag: 01736ec7-1569-4798-b384-3925eadb8bb3
+		summarizeBy: none
+		sourceColumn: Registration Source
+
+		annotation SummarizationSetBy = Automatic
+
+	column registration_after_event_flag
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 6bf218fd-2243-42d1-bbcd-8d7f6bdce952
+		summarizeBy: none
+		sourceColumn: registration_after_event_flag
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column missing_attendance_for_past_event_flag
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 51920660-52dd-4f4f-9962-a81bdc99ccc8
+		summarizeBy: none
+		sourceColumn: missing_attendance_for_past_event_flag
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	partition fact_event_registrations = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Databases(pServer),
+				    New_Project_Healthcare_Pharma_Commercial = Source{[Name=pDatabase]}[Data],
+				    warehouse_fact_event_registrations = New_Project_Healthcare_Pharma_Commercial{[Schema="warehouse",Item="fact_event_registrations"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(warehouse_fact_event_registrations,{{"attendance_status", "Attendance Status"}, {"follow_up_required", "Requires Follow-up"}, {"follow_up_status", "Follow-up Status"}, {"source", "Registration Source"}}),
+				    #"Removed Columns" = Table.RemoveColumns(#"Renamed Columns",{"registration_key", "registration_id"})
+				in
+				    #"Removed Columns"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

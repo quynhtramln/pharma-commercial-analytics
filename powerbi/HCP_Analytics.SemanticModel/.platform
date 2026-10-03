@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "HCP_Analytics"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "5917bb8a-ddab-4162-96dd-41a1d2a20a0c"
+  }
+}

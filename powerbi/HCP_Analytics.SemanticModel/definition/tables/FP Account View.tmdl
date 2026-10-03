@@ -1,0 +1,48 @@
+table 'FP Account View'
+	lineageTag: a1be33a5-f771-4bbc-925a-f6853b3b1ad1
+
+	column 'FP Account View'
+		lineageTag: 33f2732b-fa87-4a44-8a86-59bb006712ed
+		summarizeBy: none
+		sourceColumn: [Value1]
+		sortByColumn: 'FP Account View Order'
+
+		relatedColumnDetails
+			groupByColumn: 'FP Account View Fields'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'FP Account View Fields'
+		isHidden
+		lineageTag: ad4c0485-4e78-4f84-831f-8562796b8939
+		summarizeBy: none
+		sourceColumn: [Value2]
+		sortByColumn: 'FP Account View Order'
+
+		extendedProperty ParameterMetadata =
+				{
+				  "version": 3,
+				  "kind": 2
+				}
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'FP Account View Order'
+		isHidden
+		formatString: 0
+		lineageTag: f4c40cef-aac2-48a9-8bff-6dac9c71f7ed
+		summarizeBy: sum
+		sourceColumn: [Value3]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'FP Account View' = calculated
+		mode: import
+		source =
+				{
+				    ("Account Territory", NAMEOF('dim_account'[Account Territory]), 0),
+				    ("Account Type", NAMEOF('dim_account'[Account Type]), 1)
+				}
+
+	annotation PBI_Id = 4faef513934047498fb4f84740ffbbb0
+

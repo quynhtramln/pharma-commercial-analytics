@@ -1,0 +1,106 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "c0e88f11c35c4181f043",
+  "position": {
+    "x": 975,
+    "y": 191,
+    "z": 5000,
+    "height": 80,
+    "width": 262,
+    "tabOrder": 6000
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "■",
+                    "textStyle": {
+                      "color": "#c62828"
+                    }
+                  },
+                  {
+                    "value": " "
+                  },
+                  {
+                    "value": "High engagement · Low sales = opportunity",
+                    "textStyle": {
+                      "fontSize": "8pt",
+                      "color": "#37474f"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "■",
+                    "textStyle": {
+                      "color": "#1565c0"
+                    }
+                  },
+                  {
+                    "value": " "
+                  },
+                  {
+                    "value": "High engagement · High sales = core",
+                    "textStyle": {
+                      "fontSize": "8pt",
+                      "color": "#37474f"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "■",
+                    "textStyle": {
+                      "color": "#90caf9"
+                    }
+                  },
+                  {
+                    "value": " "
+                  },
+                  {
+                    "value": "Low engagement · High sales = maintain",
+                    "textStyle": {
+                      "fontSize": "8pt",
+                      "color": "#37474f"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "■",
+                    "textStyle": {
+                      "color": "#b0bec5"
+                    }
+                  },
+                  {
+                    "value": " "
+                  },
+                  {
+                    "value": "Low engagement · Low sales = monitor",
+                    "textStyle": {
+                      "fontSize": "8pt",
+                      "color": "#37474f"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

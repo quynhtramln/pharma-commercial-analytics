@@ -1,0 +1,45 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	valueFilterBehavior: independent
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_QueryOrder = ["dim_account","dim_date","dim_event","dim_field_rep","dim_hcp","dim_product","fact_event_registrations","fact_campaign","fact_hcp_account_affiliation","fact_interactions","fact_sales","tbl_account_growth","tbl_account_opportunity","tbl_hcp_opportunity","tbl_product_momentum","tbl_rep_coverage","_Measures","pServer","pDatabase"]
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table dim_account
+ref table dim_date
+ref table dim_event
+ref table dim_field_rep
+ref table dim_hcp
+ref table dim_product
+ref table fact_event_registrations
+ref table fact_campaign
+ref table fact_hcp_account_affiliation
+ref table fact_interactions
+ref table fact_sales
+ref table tbl_account_growth
+ref table tbl_account_opportunity
+ref table tbl_hcp_opportunity
+ref table tbl_product_momentum
+ref table tbl_rep_coverage
+ref table _Measures
+ref table 'Engagement Threshold'
+ref table 'Sales Threshold'
+ref table 'DQ Target'
+ref table 'DQ Flag Catalog'
+ref table 'FP Account View'
+ref table 'FP HCP View'
+ref table 'FP Rep View'
+ref table 'FP Segment View'
+ref table 'FP Event View'
+ref table Segment
+
+ref cultureInfo en-US
+

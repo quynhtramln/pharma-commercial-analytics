@@ -1,0 +1,30 @@
+table 'Engagement Threshold'
+	lineageTag: 78d555be-0fdd-4d93-bceb-7912061376df
+
+	/// Selected engagement threshold multiplier applied to the median (default 1.0).
+	measure 'Engagement Threshold Value' = SELECTEDVALUE('Engagement Threshold'[Engagement Threshold], 1)
+		isHidden
+		lineageTag: 6d5c8ce6-5351-4d55-b891-24c4545fc454
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Engagement Threshold'
+		lineageTag: 85c5efe9-7596-4401-b62f-962ed164f011
+		summarizeBy: none
+		sourceColumn: [Value]
+
+		extendedProperty ParameterMetadata =
+				{
+				  "version": 0
+				}
+
+		annotation SummarizationSetBy = User
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition 'Engagement Threshold' = calculated
+		mode: import
+		source = GENERATESERIES(0.5, 2, 0.1)
+
+	annotation PBI_Id = 7a17bb491c8f45eda00c9926ef3ef4a0
+

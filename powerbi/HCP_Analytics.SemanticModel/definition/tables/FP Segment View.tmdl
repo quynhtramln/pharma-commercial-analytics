@@ -1,0 +1,48 @@
+table 'FP Segment View'
+	lineageTag: 6f7d8077-735d-47bf-8487-6c50d52066e0
+
+	column 'FP Segment View'
+		lineageTag: 1c4d8503-f9b2-41e0-8324-6d10a572be4b
+		summarizeBy: none
+		sourceColumn: [Value1]
+		sortByColumn: 'FP Segment View Order'
+
+		relatedColumnDetails
+			groupByColumn: 'FP Segment View Fields'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'FP Segment View Fields'
+		isHidden
+		lineageTag: 1cec8391-5a2d-417b-8711-acc2c95dc7f0
+		summarizeBy: none
+		sourceColumn: [Value2]
+		sortByColumn: 'FP Segment View Order'
+
+		extendedProperty ParameterMetadata =
+				{
+				  "version": 3,
+				  "kind": 2
+				}
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'FP Segment View Order'
+		isHidden
+		formatString: 0
+		lineageTag: 7657977f-c4a5-4575-a6fd-ccdcfcda990e
+		summarizeBy: sum
+		sourceColumn: [Value3]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'FP Segment View' = calculated
+		mode: import
+		source =
+				{
+				    ("Territory", NAMEOF('dim_hcp'[HCP Territory]), 0),
+				    ("Specialty", NAMEOF('dim_hcp'[Specialty]), 1)
+				}
+
+	annotation PBI_Id = 96e45d3ab8f042c3874ba6a392da8358
+

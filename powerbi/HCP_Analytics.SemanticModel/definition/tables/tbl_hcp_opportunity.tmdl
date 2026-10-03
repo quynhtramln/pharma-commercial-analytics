@@ -1,0 +1,51 @@
+table tbl_hcp_opportunity
+	lineageTag: deeb4889-18ba-4442-97b8-e3a4ae037b0e
+
+	column hcp_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 6afd471f-2ca9-43b6-9264-33d42101ea80
+		summarizeBy: none
+		sourceColumn: hcp_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column primary_account_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: fc97eade-1783-4d7a-8704-eecc308fe5eb
+		summarizeBy: sum
+		sourceColumn: primary_account_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Opportunity Quadrant'
+		dataType: string
+		lineageTag: a16cb0a6-1039-4443-8236-ad6109a9305e
+		summarizeBy: none
+		sourceColumn: Opportunity Quadrant
+
+		annotation SummarizationSetBy = Automatic
+
+	partition tbl_hcp_opportunity = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Databases(pServer),
+				    New_Project_Healthcare_Pharma_Commercial = Source{[Name=pDatabase]}[Data],
+				    mart_tbl_hcp_opportunity = New_Project_Healthcare_Pharma_Commercial{[Schema="mart",Item="tbl_hcp_opportunity"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(mart_tbl_hcp_opportunity,{{"opportunity_quadrant", "Opportunity Quadrant"}}),
+				    #"Replaced Value" = Table.ReplaceValue(#"Renamed Columns",null,"No primary account",Replacer.ReplaceValue,{"Opportunity Quadrant"})
+				in
+				    #"Replaced Value"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

@@ -1,0 +1,164 @@
+table fact_interactions
+	lineageTag: af089786-7c21-490d-9178-aeebcec5872e
+
+	column date_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 78663107-a6f2-44ec-b08b-7aec1aaadc25
+		summarizeBy: none
+		sourceColumn: date_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column hcp_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 2c69b615-0759-49af-af2c-a4f5b87c6e13
+		summarizeBy: none
+		sourceColumn: hcp_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column account_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 038a4c39-3613-4d03-b2e8-38c0b6501e5c
+		summarizeBy: none
+		sourceColumn: account_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column rep_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 039e2d61-27e7-4ffd-a0a8-c31e8765be30
+		summarizeBy: none
+		sourceColumn: rep_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column product_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 03be907a-a9e2-440f-875c-6ec2c2c60e06
+		summarizeBy: none
+		sourceColumn: product_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Interaction Type'
+		dataType: string
+		lineageTag: fb01f6ae-6536-436f-a49d-71f7168ef24b
+		summarizeBy: none
+		sourceColumn: Interaction Type
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Interaction Channel'
+		dataType: string
+		lineageTag: 3422056b-701f-4dec-8d4a-7dffd18a66b5
+		summarizeBy: none
+		sourceColumn: Interaction Channel
+
+		annotation SummarizationSetBy = Automatic
+
+	column duration_minutes
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: e9f14d1e-33c3-4284-9a40-bb2f20522dda
+		summarizeBy: sum
+		sourceColumn: duration_minutes
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column Outcome
+		dataType: string
+		lineageTag: b7ad8b2a-8fe9-4313-b56c-4f49ded1b4fa
+		summarizeBy: none
+		sourceColumn: Outcome
+
+		annotation SummarizationSetBy = Automatic
+
+	column engagement_score
+		dataType: double
+		isHidden
+		lineageTag: 408d8821-ed29-4f9b-902a-7a574874b404
+		summarizeBy: sum
+		sourceColumn: engagement_score
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column pre_hire_interaction_flag
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 6234eb9f-e296-4e07-a51f-0653574ae657
+		summarizeBy: none
+		sourceColumn: pre_hire_interaction_flag
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column negative_duration_flag
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 3d01cbf0-cf5a-4794-a5f4-7044d045785a
+		summarizeBy: none
+		sourceColumn: negative_duration_flag
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column missing_outcome_flag
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: cf5aa8c1-9789-4f98-90ab-d91ed3a5795a
+		summarizeBy: none
+		sourceColumn: missing_outcome_flag
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	partition fact_interactions = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Databases(pServer),
+				    New_Project_Healthcare_Pharma_Commercial = Source{[Name=pDatabase]}[Data],
+				    warehouse_fact_interactions = New_Project_Healthcare_Pharma_Commercial{[Schema="warehouse",Item="fact_interactions"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(warehouse_fact_interactions,{{"interaction_type", "Interaction Type"}, {"channel", "Interaction Channel"}, {"outcome", "Outcome"}}),
+				    #"Removed Columns" = Table.RemoveColumns(#"Renamed Columns",{"interaction_key", "interaction_id"})
+				in
+				    #"Removed Columns"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

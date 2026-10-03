@@ -1,0 +1,731 @@
+// =============================================================================
+// HCP Commercial Analytics - all DAX measures
+// Extracted from powerbi/HCP_Analytics.pbix, grouped by display folder.
+// The comment above each measure is its business description stored in the model.
+// 101 measures in 10 folders.
+// =============================================================================
+
+
+// -----------------------------------------------------------------------------
+// 0. Base  (1)
+// -----------------------------------------------------------------------------
+
+// Fixed as-of date (29 Jun 2026) of the simulated dataset. Used instead of TODAY() in all time-
+// relative logic.
+[As Of Date] = DATE(2026, 6, 29)
+
+
+// -----------------------------------------------------------------------------
+// 1. Sales  (25)
+// -----------------------------------------------------------------------------
+
+// Sum of sales_amount. Excludes rows with negative quantity or non-positive unit price (Business
+// Rule 6). Sales are attributed to accounts, not HCPs.
+[Total Sales] =
+    CALCULATE(
+        SUM(fact_sales[sales_amount]),
+        fact_sales[negative_quantity_flag] = FALSE(),
+        fact_sales[non_positive_price_flag] = FALSE()
+    )
+
+// Total Sales for the same period last year. Helper for YoY Growth %.
+[Sales PY] = CALCULATE([Total Sales], SAMEPERIODLASTYEAR(dim_date[Date]))
+
+// Total Sales vs the same period last year (SAMEPERIODLASTYEAR on dim_date). Blank when there is
+// no prior-year sales.
+[YoY Growth %] =
+    VAR FirstDataDate = DATE(2023, 1, 1)
+    VAR SelStart = MIN(dim_date[Date])
+    RETURN
+        IF(
+            SelStart >= EDATE(FirstDataDate, 12),
+            DIVIDE([Total Sales] - [Sales PY], [Sales PY])
+        )
+
+// Total Sales in the last 90 days to 29 Jun 2026. Ignores the date slicer.
+[Sales L90D] =
+    VAR AsOf = [As Of Date]
+    RETURN
+    CALCULATE(
+        [Total Sales],
+        REMOVEFILTERS(dim_date),
+        dim_date[Date] > AsOf - 90,
+        dim_date[Date] <= AsOf
+    )
+
+// Total Sales in the 90 days before the last 90 days (to 29 Jun 2026). Ignores the date slicer.
+[Sales Prior 90D] =
+    VAR AsOf = [As Of Date]
+    RETURN
+    CALCULATE(
+        [Total Sales],
+        REMOVEFILTERS(dim_date),
+        dim_date[Date] > AsOf - 180,
+        dim_date[Date] <= AsOf - 90
+    )
+
+// Sales in the last 90 days vs the prior 90 days, anchored to the as-of date 2026-06-29. Ignores
+// the date slicer. Same logic as tbl_account_growth.
+[Sales 90D Growth %] = DIVIDE([Sales L90D] - [Sales Prior 90D], [Sales Prior 90D])
+
+// Total Sales for the previous month. Helper for MoM Growth %.
+[Sales PM] = CALCULATE([Total Sales], DATEADD(dim_date[Date], -1, MONTH))
+
+// Total Sales vs the previous month. Use on monthly axes; on a card use MoM Growth % (Latest
+// Month).
+[MoM Growth %] = DIVIDE([Total Sales] - [Sales PM], [Sales PM])
+
+// Latest month in the selected period vs the month before. Capped at the as-of date 2026-06-29,
+// so June 2026 is a partial month.
+[MoM Growth % (Latest Month)] =
+    VAR EndD = MIN(MAX(dim_date[Date]), [As Of Date])
+    VAR CurStart = DATE(YEAR(EndD), MONTH(EndD), 1)
+    VAR PrevStart = EDATE(CurStart, -1)
+    VAR CurDays = INT(EndD - CurStart) + 1
+    VAR PrevDays = INT(CurStart - PrevStart)
+    VAR CurSales =
+        CALCULATE([Total Sales], REMOVEFILTERS(dim_date),
+            dim_date[Date] >= CurStart, dim_date[Date] <= EndD)
+    VAR PrevSales =
+        CALCULATE([Total Sales], REMOVEFILTERS(dim_date),
+            dim_date[Date] >= PrevStart, dim_date[Date] < CurStart)
+    RETURN
+        DIVIDE(DIVIDE(CurSales, CurDays) - DIVIDE(PrevSales, PrevDays), DIVIDE(PrevSales, PrevDays))
+
+// Total sales_amount divided by total quantity, on the same cleaned row set (negative quantity
+// and non-positive price excluded).
+[Avg Unit Price] =
+    CALCULATE(
+        DIVIDE(SUM(fact_sales[sales_amount]), SUM(fact_sales[quantity])),
+        fact_sales[negative_quantity_flag] = FALSE(),
+        fact_sales[non_positive_price_flag] = FALSE()
+    )
+
+// Share of Total Sales within the current slicer selection (ALLSELECTED on accounts).
+[Revenue Contribution %] = DIVIDE([Total Sales], CALCULATE([Total Sales], ALLSELECTED(dim_account)))
+
+// Text: the account territory with the highest Sales 90D Growth %, with its growth rate.
+[Highlight - Top Growth Territory] =
+    VAR T =
+        FILTER(
+            ADDCOLUMNS(VALUES(dim_account[Account Territory]), "@g", [Sales 90D Growth %]),
+            NOT ISBLANK([@g])
+        )
+    VAR Top1 = TOPN(1, T, [@g], DESC)
+    RETURN
+        "Top growth territory: " & MAXX(Top1, dim_account[Account Territory])
+            & ", " & FORMAT(MAXX(Top1, [@g]), "+0.0%;-0.0%") & " vs the previous 90 days"
+
+// Change in sales value: last 90 days minus the previous 90 days, to 29 Jun 2026. Used to rank
+// accounts so small accounts with a large % change do not dominate.
+[Sales Growth (90D)] = [Sales L90D] - [Sales Prior 90D]
+
+// Account's share of total company sales in the last 90 days to 29 Jun 2026. Ignores account
+// filters in the denominator.
+[Revenue Contribution % (L90D)] = DIVIDE([Sales L90D], CALCULATE([Sales L90D], REMOVEFILTERS(dim_account)))
+
+// Rank of the account by Sales Growth (90D), highest first, within the current filter. Blank when
+// more than one account is in context.
+[Account Rank] =
+    IF(
+        HASONEVALUE(dim_account[account_key]),
+        RANKX(ALLSELECTED(dim_account), [Sales Growth (90D)], , DESC)
+    )
+
+// Number of accounts in the Growing tier (90-day sales growth above the 67th percentile, to 29
+// Jun 2026).
+[Growing Accounts] = CALCULATE(COUNTROWS(tbl_account_growth), tbl_account_growth[Growth Tier] = "Growing")
+
+// Number of products in the Rising momentum tier (90-day sales growth above the 67th percentile,
+// to 29 Jun 2026).
+[Rising Products] = CALCULATE(COUNTROWS(tbl_product_momentum), tbl_product_momentum[Momentum Tier] = "Rising")
+
+// Number of products in the Declining momentum tier (90-day sales growth below the 33rd
+// percentile, to 29 Jun 2026).
+[Declining Products] = CALCULATE(COUNTROWS(tbl_product_momentum), tbl_product_momentum[Momentum Tier] = "Declining")
+
+// Number of accounts in tbl_account_growth. Use with Growth Tier to count accounts per tier.
+[Accounts by Tier] = COUNTROWS(tbl_account_growth)
+
+// Title text for the Sales-by-product tooltip page: the hovered month, or a generic title above
+// month level.
+[TT Month Label] =
+    IF(
+        HASONEVALUE(dim_date[Year Month]),
+        SELECTEDVALUE(dim_date[Year Month]) & " · top 5 products",
+        "Top 5 products"
+    )
+
+// Text for the Momentum tier column: the product's tier at product level, or the count of rising
+// and declining products at therapeutic-area level.
+[Momentum Tier Label] =
+    IF(
+        ISINSCOPE(dim_product[Product]),
+        SELECTEDVALUE(tbl_product_momentum[Momentum Tier]),
+        VAR RisingN =
+            CALCULATE(COUNTROWS(tbl_product_momentum), tbl_product_momentum[Momentum Tier] = "Rising")
+        VAR DecliningN =
+            CALCULATE(COUNTROWS(tbl_product_momentum), tbl_product_momentum[Momentum Tier] = "Declining")
+        RETURN
+            FORMAT(RisingN + 0, "0") & " rising · " & FORMAT(DecliningN + 0, "0") & " declining"
+    )
+
+// Font colour for the Momentum tier column: blue for Rising, red for Declining, grey otherwise.
+[Momentum Tier Color] =
+    SWITCH(
+        [Momentum Tier Label],
+        "Rising", "#1565C0",
+        "Declining", "#C62828",
+        "#546E7A"
+    )
+
+// Each month's average daily sales as % change vs July 2025. Per-day figures remove distortion
+// from short or partial months.
+[Sales vs Jul 2025 %] =
+    VAR AsOf = [As Of Date]
+    VAR BaseStart = EOMONTH(AsOf, -12) + 1
+    VAR BaseEnd = EOMONTH(BaseStart, 0)
+    VAR BaseSales =
+        CALCULATE([Total Sales], REMOVEFILTERS(dim_date),
+            dim_date[Date] >= BaseStart, dim_date[Date] <= BaseEnd)
+    VAR BaseAvgPerDay = DIVIDE(BaseSales, INT(BaseEnd - BaseStart) + 1)
+    VAR CurDays = COUNTROWS(FILTER(VALUES(dim_date[Date]), dim_date[Date] <= AsOf))
+    VAR CurAvgPerDay = DIVIDE([Total Sales], CurDays)
+    RETURN DIVIDE(CurAvgPerDay, BaseAvgPerDay) - 1
+
+// Units sold, excluding rows with negative quantity or non-positive unit price (same exclusions
+// as Total Sales).
+[Total Quantity] =
+    CALCULATE(
+        SUM(fact_sales[quantity]),
+        fact_sales[negative_quantity_flag] = FALSE(),
+        fact_sales[non_positive_price_flag] = FALSE()
+    )
+
+[Growth Color] =
+    SWITCH (
+        TRUE (),
+        ISBLANK ([YoY Growth %] ), "#808080",
+        [YoY Growth %] > 0, "#1E8E3E",   -- xanh
+        [YoY Growth %] < 0, "#D93025",   -- đỏ
+        "#808080"                          -- bằng 0: xám
+    )
+
+
+// -----------------------------------------------------------------------------
+// 2. Engagement  (15)
+// -----------------------------------------------------------------------------
+
+// Count of field-force interactions. Includes all interaction rows. Data quality flags are
+// tracked separately on the Data Quality page.
+[Total Engagement] = COUNTROWS(fact_interactions)
+
+// Distinct HCPs with at least one interaction in the current context.
+[HCPs Engaged] = DISTINCTCOUNT(fact_interactions[hcp_key])
+
+// Average engagement_score across interactions in the current context.
+[Avg Engagement Score] = AVERAGE(fact_interactions[engagement_score])
+
+// Interactions divided by distinct HCPs engaged. Helper for Engagement Frequency.
+[Interactions per HCP] = DIVIDE([Total Engagement], [HCPs Engaged])
+
+// Interactions in the last 90 days to 29 Jun 2026. Helper for Engagement Trend %.
+[Engagement L90D] =
+    VAR AsOf = [As Of Date]
+    RETURN
+    CALCULATE(
+        [Total Engagement],
+        REMOVEFILTERS(dim_date),
+        dim_date[Date] > AsOf - 90,
+        dim_date[Date] <= AsOf
+    )
+
+// Interactions in the 90 days before the last 90 days. Helper for Engagement Trend %.
+[Engagement Prior 90D] =
+    VAR AsOf = [As Of Date]
+    RETURN
+    CALCULATE(
+        [Total Engagement],
+        REMOVEFILTERS(dim_date),
+        dim_date[Date] > AsOf - 180,
+        dim_date[Date] <= AsOf - 90
+    )
+
+// Interactions in the last 90 days vs the prior 90 days, anchored to the as-of date 2026-06-29.
+// Ignores the date slicer.
+[Engagement Trend %] = DIVIDE([Engagement L90D] - [Engagement Prior 90D], [Engagement Prior 90D])
+
+// Number of months in the current context that have at least one interaction. Helper for
+// Engagement Frequency.
+[Months in Period] =
+    COUNTROWS(
+        FILTER(SUMMARIZE(dim_date, dim_date[Year], dim_date[Month No]), [Total Engagement] > 0)
+    )
+
+// Interactions per engaged HCP per month (months counted only where interactions exist). Shown as
+// Visit Frequency on Field Force pages.
+[Engagement Frequency] = DIVIDE([Interactions per HCP], [Months in Period])
+
+// Interactions linked to products where priority_flag = Y.
+[Interactions (Priority Products)] = CALCULATE([Total Engagement], dim_product[Priority Product] = TRUE())
+
+// Share of interactions linked to priority products.
+[Priority Product Engagement %] = DIVIDE([Interactions (Priority Products)], [Total Engagement])
+
+// Text: the priority product with the most interactions in the current context (for example, one
+// HCP). Ties are listed together.
+[Top Priority Product] =
+    VAR T =
+        ADDCOLUMNS(
+            CALCULATETABLE(
+                SUMMARIZE(fact_interactions, dim_product[Product]),
+                dim_product[Priority Product] = TRUE()
+            ),
+            "@n", CALCULATE(COUNTROWS(fact_interactions))
+        )
+    VAR Top1 = TOPN(1, T, [@n], DESC)
+    RETURN MAXX(Top1, dim_product[Product])
+
+// Most recent interaction date in the current context.
+[Last Visit Date] = MAXX(fact_interactions, RELATED(dim_date[Date]))
+
+// Text: the HCP ID with the most interactions in the current context. HCP names are excluded for
+// privacy (PII).
+[Top HCP (by Interactions)] =
+    VAR T =
+        FILTER(
+            ADDCOLUMNS(VALUES(dim_hcp[HCP ID]), "@n", [Total Engagement]),
+            [@n] > 0
+        )
+    RETURN MAXX(TOPN(1, T, [@n], DESC), dim_hcp[HCP ID])
+
+// Plain-language reading of Engagement Frequency, e.g. "≈ 1 contact every 2.1 months per HCP".
+[Interaction Frequency Label] =
+    VAR F = [Engagement Frequency]
+    RETURN
+        IF(
+            F > 0,
+            "≈ 1 contact every " & FORMAT(DIVIDE(1, F), "0.0") & " months per HCP"
+        )
+
+
+// -----------------------------------------------------------------------------
+// 3. Coverage  (8)
+// -----------------------------------------------------------------------------
+
+// Number of HCPs with status Active. Denominator of Coverage Rate %.
+[Active HCP Count] = CALCULATE(COUNTROWS(dim_hcp), dim_hcp[HCP Status] = "Active")
+
+// Distinct Active HCPs with at least one interaction in the current context.
+[Active HCP Engaged] = CALCULATE(DISTINCTCOUNT(fact_interactions[hcp_key]), dim_hcp[HCP Status] = "Active")
+
+// Active HCPs engaged divided by all Active HCPs. Valid only when sliced by HCP attributes; for
+// rep-level coverage use Rep Territory Coverage %.
+[Coverage Rate %] = DIVIDE([Active HCP Engaged], [Active HCP Count])
+
+// Number of accounts with status Active. Denominator of Account Coverage Rate %.
+[Active Account Count] = CALCULATE(COUNTROWS(dim_account), dim_account[Account Status] = "Active")
+
+// Distinct Active accounts with at least one interaction in the current context.
+[Active Accounts Engaged] = CALCULATE(DISTINCTCOUNT(fact_interactions[account_key]), dim_account[Account Status] = "Active")
+
+// Active accounts with at least one interaction divided by all Active accounts.
+[Account Coverage Rate %] = DIVIDE([Active Accounts Engaged], [Active Account Count])
+
+// Interactions per rep with at least one interaction in the current context.
+[Rep Productivity] = DIVIDE([Total Engagement], DISTINCTCOUNT(fact_interactions[rep_key]))
+
+// Coverage from tbl_rep_coverage, measured at territory level, not per individual rep (20 to 87
+// reps share a territory; no rep-HCP assignment data). Static: does not respond to the date
+// slicer.
+[Rep Territory Coverage %] = DIVIDE(AVERAGE(tbl_rep_coverage[Territory Coverage Rate]), 100)
+
+
+// -----------------------------------------------------------------------------
+// 4. Events  (9)
+// -----------------------------------------------------------------------------
+
+// Count of HCP event registrations, including future events.
+[Total Registrations] = COUNTROWS(fact_event_registrations)
+
+// Registrations with attendance status Attended, for events that started on or before 29 Jun 2026
+// (same scope as the denominator Registrations (Past Events)).
+[Attended Count] =
+    VAR AsOf = [As Of Date]
+    RETURN
+    CALCULATE(
+        COUNTROWS(fact_event_registrations),
+        fact_event_registrations[Attendance Status] = "Attended",
+        dim_event[Event Start Date] <= AsOf   -- fix found in SQL reconciliation: exclude future events (ISS-066)
+    )
+
+// Attended registrations divided by registrations for events that started on or before the as-of
+// date 2026-06-29. Future events are excluded because they cannot have attendance yet.
+[Attendance Rate %] = DIVIDE([Attended Count], [Registrations (Past Events)])
+
+// Registrations flagged as requiring follow-up.
+[Follow-up Required] = CALCULATE(COUNTROWS(fact_event_registrations), fact_event_registrations[Requires Follow-up] = TRUE())
+
+// Registrations for events that started on or before 29 Jun 2026. Denominator of Attendance Rate
+// % and No-show Rate %.
+[Registrations (Past Events)] =
+    VAR AsOf = [As Of Date]
+    RETURN CALCULATE(COUNTROWS(fact_event_registrations), dim_event[Event Start Date] <= AsOf)
+
+// Registrations with status No-show for events that started on or before 29 Jun 2026.
+[No-show Count] =
+    VAR AsOf = [As Of Date]
+    RETURN
+    CALCULATE(
+        COUNTROWS(fact_event_registrations),
+        fact_event_registrations[Attendance Status] = "No-show",
+        dim_event[Event Start Date] <= AsOf
+    )
+
+// No-show registrations divided by registrations for past events (as-of date 2026-06-29).
+[No-show Rate %] = DIVIDE([No-show Count], [Registrations (Past Events)])
+
+// Registrations that require follow-up and have follow-up status Completed.
+[Follow-up Completed] =
+    CALCULATE(
+        COUNTROWS(fact_event_registrations),
+        fact_event_registrations[Requires Follow-up] = TRUE(),
+        fact_event_registrations[Follow-up Status] = "Completed"
+    )
+
+// Completed follow-ups divided by registrations that require follow-up.
+[Follow-up Completion %] = DIVIDE([Follow-up Completed], [Follow-up Required])
+
+
+// -----------------------------------------------------------------------------
+// 5. Engagement-Sales Gap  (12)
+// -----------------------------------------------------------------------------
+
+// Interactions of HCPs with an Active affiliation to the account, via the HCP-account affiliation
+// bridge. Not additive across accounts, because one HCP can be affiliated to several accounts.
+[Engagement Index] =
+    VAR AffHCP =
+        CALCULATETABLE(
+            VALUES(fact_hcp_account_affiliation[hcp_key]),
+            fact_hcp_account_affiliation[Affiliation Status] = "Active"
+        )
+    RETURN
+        CALCULATE([Total Engagement], REMOVEFILTERS(dim_account), TREATAS(AffHCP, dim_hcp[hcp_key]))
+
+// Median Engagement Index across the accounts in the current filter. Base for the engagement
+// threshold.
+[Median Account Engagement] = MEDIANX(ALLSELECTED(dim_account), [Engagement Index])
+
+// Median Total Sales across the accounts in the current filter. Base for the sales threshold.
+[Median Account Sales] = MEDIANX(ALLSELECTED(dim_account), [Total Sales])
+
+// Number of accounts with Engagement Index at or above the engagement threshold and Total Sales
+// below the sales threshold. Thresholds = median x What-if multiplier (default 1 = median,
+// matching tbl_account_opportunity). Shows association only; engagement does not prove sales
+// causality.
+[Engagement-Sales Gap Accounts] =
+    VAR EngCut = [Median Account Engagement] * [Engagement Threshold Value]
+    VAR SalesCut = [Median Account Sales] * [Sales Threshold Value]
+    RETURN
+        COUNTROWS(
+            FILTER(VALUES(dim_account[account_key]),
+                [Engagement Index] >= EngCut && [Total Sales] < SalesCut)
+        )
+
+// Account Total Sales divided by the average sales of accounts of the same account type. 100% =
+// peer average. A proxy for commercial penetration, because no market-potential data is
+// available.
+[Sales vs Peer Avg %] =
+    VAR PeerTbl =
+        CALCULATETABLE(
+            ADDCOLUMNS(VALUES(dim_account[Account Type]),
+                "@peer", CALCULATE(AVERAGEX(VALUES(dim_account[account_key]), [Total Sales]))),
+            REMOVEFILTERS(dim_account)
+        )
+    RETURN
+        AVERAGEX(
+            VALUES(dim_account[account_key]),
+            VAR AccType = CALCULATE(SELECTEDVALUE(dim_account[Account Type]))
+            VAR Peer = MAXX(FILTER(PeerTbl, dim_account[Account Type] = AccType), [@peer])
+            RETURN DIVIDE([Total Sales], Peer)
+        )
+
+// Text: count of High Engagement / Low Sales accounts at default thresholds (1 x median).
+[Highlight - Gap Accounts] =
+    FORMAT([Engagement-Sales Gap Accounts], "#,0")
+        & " accounts show high HCP engagement but low sales (all data to 29 Jun 2026)"
+
+// Gap accounts as a share of all accounts in the current filter.
+[Gap Accounts %] =
+    DIVIDE(
+        [Engagement-Sales Gap Accounts],
+        COUNTROWS(VALUES(dim_account[account_key]))
+    )
+
+// Engagement threshold = median account engagement × the Engagement Threshold multiplier. Drives
+// the vertical line on the scatter.
+[Engagement Cut] = [Median Account Engagement] * [Engagement Threshold Value]
+
+// Sales threshold = median account sales × the Sales Threshold multiplier. Drives the horizontal
+// line on the scatter.
+[Sales Cut] = [Median Account Sales] * [Sales Threshold Value]
+
+// Text showing the absolute cut-offs currently applied: engagement ≥ median × engagement
+// multiplier, sales < median × sales multiplier.
+[Current Thresholds] =
+    "Engagement ≥ " & FORMAT([Engagement Cut], "#,0")
+        & "  ·  Sales < " & FORMAT([Sales Cut], "$#,0")
+
+// Colour rule for the scatter: red for gap accounts (high engagement, sales below threshold),
+// light blue otherwise.
+[Gap Dot Color] = IF([Engagement-Sales Gap Accounts] = 1, "#C62828", "#90CAF9")
+
+// Name of the hovered account, shown as the title of the Account profile tooltip.
+[Tooltip Account Name] = SELECTEDVALUE(dim_account[Account])
+
+
+// -----------------------------------------------------------------------------
+// 6. Opportunity  (5)
+// -----------------------------------------------------------------------------
+
+// Total Sales of the HCP's primary Active account(s). Sales belong to accounts, not HCPs
+// (Business Rule 1). HCPs with overlapping primary affiliations (ISS-016) sum both accounts.
+[Primary Account Sales] =
+    VAR PrimAcc =
+        TOPN(
+            1,
+            CALCULATETABLE(
+                SUMMARIZE(
+                    fact_hcp_account_affiliation,
+                    fact_hcp_account_affiliation[account_key],
+                    fact_hcp_account_affiliation[Affiliation Start]
+                ),
+                fact_hcp_account_affiliation[Is Primary Affiliation] = TRUE(),
+                fact_hcp_account_affiliation[Affiliation Status] = "Active"
+            ),
+            fact_hcp_account_affiliation[Affiliation Start], DESC
+        )
+    RETURN
+        CALCULATE(
+            [Total Sales],
+            TREATAS(
+                SELECTCOLUMNS(PrimAcc, "k", fact_hcp_account_affiliation[account_key]),
+                dim_account[account_key]
+            )
+        )
+
+// Number of accounts in the selected opportunity segment(s). Segments are fixed at 29 Jun 2026
+// (median split of engagement and sales).
+[Accounts in Segment] =
+    CALCULATE(
+        COUNTROWS(tbl_account_opportunity),
+        KEEPFILTERS(TREATAS(VALUES(Segment[Segment]), tbl_account_opportunity[Opportunity Quadrant]))
+    )
+
+// Number of HCPs in the selected segment(s). Each HCP inherits the segment of its most recent
+// active primary account.
+[HCPs in Segment] =
+    CALCULATE(
+        COUNTROWS(tbl_hcp_opportunity),
+        KEEPFILTERS(TREATAS(VALUES(Segment[Segment]), tbl_hcp_opportunity[Opportunity Quadrant]))
+    )
+
+// Returns 1 when the account belongs to a segment selected in the Segment slicer. Used as a
+// visual filter on the Accounts table.
+[Account In Segment Flag] = IF([Accounts in Segment] > 0, 1)
+
+// Returns 1 when the HCP belongs to a segment selected in the Segment slicer. Used as a visual
+// filter on the HCPs table.
+[HCP In Segment Flag] = IF([HCPs in Segment] > 0, 1)
+
+
+// -----------------------------------------------------------------------------
+// 7. Data Quality  (17)
+// -----------------------------------------------------------------------------
+
+// Rows affected per flag, based on the DQ Flag Catalog. Counts every flag, including resolved and
+// informational ones. A row with two flags is counted once per flag.
+[DQ Flag Rows] =
+    SUMX(
+        VALUES('DQ Flag Catalog'[Flag Key]),
+        SWITCH('DQ Flag Catalog'[Flag Key],
+            1,  CALCULATE(COUNTROWS(fact_sales), fact_sales[pre_launch_sales_flag] = TRUE()),
+            2,  CALCULATE(COUNTROWS(fact_sales), fact_sales[negative_quantity_flag] = TRUE()),
+            3,  CALCULATE(COUNTROWS(fact_sales), fact_sales[non_positive_price_flag] = TRUE()),
+            4,  CALCULATE(COUNTROWS(fact_sales), fact_sales[missing_sales_channel_flag] = TRUE()),
+            5,  CALCULATE(COUNTROWS(fact_sales), fact_sales[missing_invoice_number_flag] = TRUE()),
+            6,  CALCULATE(COUNTROWS(fact_sales), fact_sales[amount_mismatch_flag] = TRUE()),
+            7,  CALCULATE(COUNTROWS(fact_interactions), fact_interactions[pre_hire_interaction_flag] = TRUE()),
+            8,  CALCULATE(COUNTROWS(fact_interactions), fact_interactions[negative_duration_flag] = TRUE()),
+            9,  CALCULATE(COUNTROWS(fact_interactions), fact_interactions[missing_outcome_flag] = TRUE()),
+            10, CALCULATE(COUNTROWS(fact_event_registrations), fact_event_registrations[registration_after_event_flag] = TRUE()),
+            11, CALCULATE(COUNTROWS(fact_event_registrations), fact_event_registrations[missing_attendance_for_past_event_flag] = TRUE()),
+            12, CALCULATE(COUNTROWS(fact_hcp_account_affiliation), fact_hcp_account_affiliation[date_swap_applied] = TRUE()),
+            13, CALCULATE(COUNTROWS(fact_hcp_account_affiliation), fact_hcp_account_affiliation[primary_overlap_flag] = TRUE()),
+            14, CALCULATE(COUNTROWS(fact_hcp_account_affiliation), fact_hcp_account_affiliation[status_date_mismatch_flag] = TRUE()),
+            15, CALCULATE(COUNTROWS(fact_campaign), fact_campaign[missing_campaign_name_flag] = TRUE()),
+            16, CALCULATE(COUNTROWS(fact_campaign), fact_campaign[missing_campaign_type_flag] = TRUE()),
+            17, CALCULATE(COUNTROWS(fact_campaign), fact_campaign[missing_status_flag] = TRUE()),
+            18, CALCULATE(COUNTROWS(fact_campaign), fact_campaign[start_after_end_flag] = TRUE()),
+            19, CALCULATE(COUNTROWS(fact_campaign), fact_campaign[negative_target_hcp_count_flag] = TRUE()),
+            20, CALCULATE(COUNTROWS(dim_event), dim_event[Is Pre-launch Event] = TRUE())
+        )
+    )
+
+// Total rows of the source table(s) in context, per the DQ Flag Catalog. Denominator for DQ
+// percentages.
+[DQ Table Rows] =
+    SUMX(
+        VALUES('DQ Flag Catalog'[Table]),
+        SWITCH('DQ Flag Catalog'[Table],
+            "fact_sales", COUNTROWS(fact_sales),
+            "fact_interactions", COUNTROWS(fact_interactions),
+            "fact_event_registrations", COUNTROWS(fact_event_registrations),
+            "fact_hcp_account_affiliation", COUNTROWS(fact_hcp_account_affiliation),
+            "fact_campaign", COUNTROWS(fact_campaign),
+            "dim_event", COUNTROWS(dim_event)
+        )
+    )
+
+// DQ Flag Rows divided by the total rows of the flag's source table.
+[DQ Flag % of Table] = DIVIDE([DQ Flag Rows], [DQ Table Rows])
+
+// Rows with at least one open flag that counts toward the DQ score. Excludes Date Swap Applied
+// (resolved) and Pre-launch Event (valid activity). Responds to the Table, Severity and Flag Type
+// slicers.
+[DQ Flagged Rows] =
+    VAR Sel =
+        CALCULATETABLE(
+            VALUES('DQ Flag Catalog'[Flag Key]),
+            'DQ Flag Catalog'[In DQ Score] = TRUE()
+        )
+    RETURN
+    SUMX(
+        VALUES('DQ Flag Catalog'[Table]),
+        SWITCH('DQ Flag Catalog'[Table],
+            "fact_sales",
+                COUNTROWS(FILTER(fact_sales,
+                    (1 IN Sel && fact_sales[pre_launch_sales_flag])
+                    || (2 IN Sel && fact_sales[negative_quantity_flag])
+                    || (3 IN Sel && fact_sales[non_positive_price_flag])
+                    || (4 IN Sel && fact_sales[missing_sales_channel_flag])
+                    || (5 IN Sel && fact_sales[missing_invoice_number_flag])
+                    || (6 IN Sel && fact_sales[amount_mismatch_flag]))),
+            "fact_interactions",
+                COUNTROWS(FILTER(fact_interactions,
+                    (7 IN Sel && fact_interactions[pre_hire_interaction_flag])
+                    || (8 IN Sel && fact_interactions[negative_duration_flag])
+                    || (9 IN Sel && fact_interactions[missing_outcome_flag]))),
+            "fact_event_registrations",
+                COUNTROWS(FILTER(fact_event_registrations,
+                    (10 IN Sel && fact_event_registrations[registration_after_event_flag])
+                    || (11 IN Sel && fact_event_registrations[missing_attendance_for_past_event_flag]))),
+            "fact_hcp_account_affiliation",
+                COUNTROWS(FILTER(fact_hcp_account_affiliation,
+                    (13 IN Sel && fact_hcp_account_affiliation[primary_overlap_flag])
+                    || (14 IN Sel && fact_hcp_account_affiliation[status_date_mismatch_flag]))),
+            "fact_campaign",
+                COUNTROWS(FILTER(fact_campaign,
+                    (15 IN Sel && fact_campaign[missing_campaign_name_flag])
+                    || (16 IN Sel && fact_campaign[missing_campaign_type_flag])
+                    || (17 IN Sel && fact_campaign[missing_status_flag])
+                    || (18 IN Sel && fact_campaign[start_after_end_flag])
+                    || (19 IN Sel && fact_campaign[negative_target_hcp_count_flag]))),
+            "dim_event", 0
+        )
+    )
+
+// 1 minus DQ Flagged Rows divided by total rows. By table when sliced by Table; overall
+// otherwise. The overall score is weighted by row count, so fact_sales dominates.
+[DQ Score %] = 1 - DIVIDE([DQ Flagged Rows], [DQ Table Rows])
+
+// Number of source tables with DQ Score % below the DQ Target parameter (default 95%).
+[Tables Below DQ Target] = COUNTROWS(FILTER(VALUES('DQ Flag Catalog'[Table]), [DQ Score %] < [DQ Target Value]))
+
+// Text: number of source tables below the DQ target, out of 6.
+[Highlight - DQ Tables] =
+    [Tables Below DQ Target] & " of " & COUNTROWS(ALL('DQ Flag Catalog'[Table]))
+        & " source tables are below the data quality target"
+
+// Absolute value of sales on rows excluded from Total Sales (negative quantity or non-positive
+// unit price).
+[Sales Excluded by DQ] =
+    CALCULATE(
+        SUMX(fact_sales, ABS(fact_sales[sales_amount])),
+        FILTER(
+            fact_sales,
+            fact_sales[negative_quantity_flag] || fact_sales[non_positive_price_flag]
+        )
+    )
+
+// Sales Excluded by DQ as a share of gross absolute sales.
+[Sales Excluded by DQ %] =
+    DIVIDE(
+        [Sales Excluded by DQ],
+        SUMX(fact_sales, ABS(fact_sales[sales_amount]))
+    )
+
+// Text for the Overview badge, e.g. "Data trust: 72.9%".
+[DQ Trust Label] = "Data trust: " & FORMAT([DQ Score %], "0.0%")
+
+// Badge fill colour: green when DQ Score % meets the target, amber otherwise.
+[DQ Badge Background] = IF([DQ Score %] >= [DQ Target Value], "#E8F5E9", "#FFF4E5")
+
+// Badge text colour: dark green when DQ Score % meets the target, dark amber otherwise.
+[DQ Badge Font] = IF([DQ Score %] >= [DQ Target Value], "#1B5E20", "#8A4B00")
+
+// Bar colour on Quality score by table: red below the DQ target, blue at or above it.
+[DQ Bar Color] = IF([DQ Score %] < [DQ Target Value], "#C62828", "#1565C0")
+
+// Source column checked by the selected flag, from the DQ Flag Catalog.
+[Flag Column] = SELECTEDVALUE('DQ Flag Catalog'[Column])
+
+// Severity of the selected flag, from the DQ Flag Catalog (maintained in the Data Quality Issues
+// Log).
+[Flag Severity] = SELECTEDVALUE('DQ Flag Catalog'[Severity])
+
+// Definition line under the Sales excluded card: excluded sales as % of gross sales.
+[Sales Excluded Label] = FORMAT([Sales Excluded by DQ %], "0.00%") & " of gross sales removed by DQ rules"
+
+// Definition line under the DQ score card: current target and number of tables below it.
+[DQ Score Label] =
+    "Target " & FORMAT([DQ Target Value], "0%") & " · "
+        & [Tables Below DQ Target] & " of 6 tables below target"
+
+
+// -----------------------------------------------------------------------------
+// 8. Drillthrough  (6)
+// -----------------------------------------------------------------------------
+
+// Context bar text on Account detail, e.g. "Showing: Healthcare Account 01047 · all time".
+[Selected Account Label] = "Showing: " & SELECTEDVALUE(dim_account[Account], "multiple accounts") & " · all time"
+
+// Context bar text on HCP detail.
+[Selected HCP Label] = "Showing: " & SELECTEDVALUE(dim_hcp[HCP ID], "multiple HCPs") & " · all time"
+
+// Number of HCP–account affiliation rows in context. Used as a visual filter so affiliation
+// tables show only real affiliations.
+[Affiliation Count] = COUNTROWS(fact_hcp_account_affiliation)
+
+// HCP's interactions across all accounts. Sums to the account's Engagement Index.
+[HCP Interactions (All Accounts)] = CALCULATE([Total Engagement], REMOVEFILTERS(dim_account))
+
+// HCP's average engagement score across all accounts, not only the account being viewed.
+[HCP Avg Score (All Accounts)] = CALCULATE([Avg Engagement Score], REMOVEFILTERS(dim_account))
+
+// Context bar text on Rep detail.
+[Selected Rep Label] = "Showing: " & SELECTEDVALUE(dim_field_rep[Rep], "multiple reps") & " · all time"
+
+
+// -----------------------------------------------------------------------------
+// 9. What-if parameters  (3)
+// -----------------------------------------------------------------------------
+
+// Selected engagement threshold multiplier applied to the median (default 1.0).
+[Engagement Threshold Value] = SELECTEDVALUE('Engagement Threshold'[Engagement Threshold], 1)
+
+// Selected sales threshold multiplier applied to the median (default 1.0).
+[Sales Threshold Value] = SELECTEDVALUE('Sales Threshold'[Sales Threshold], 1)
+
+// Selected DQ target (default 95%).
+[DQ Target Value] = SELECTEDVALUE('DQ Target'[DQ Target], 0.95)

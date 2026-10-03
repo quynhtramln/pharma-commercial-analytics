@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "HCP_Analytics"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "39822a81-2365-4f76-b2f8-dd02b7b99e93"
+  }
+}

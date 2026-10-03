@@ -1,0 +1,22 @@
+# ---- The source dataset is private: never commit extracts ----
+data/
+*.csv
+*.xlsx
+*.xls
+*.bak
+*.mdf
+*.ldf
+~$*
+
+# ---- Power BI: the .pbix AND the .pbip project are both committed ----
+# cache.abf = the .pbip data cache; the data already ships inside the .pbix, so avoid a second copy
+**/.pbi/cache.abf
+**/.pbi/localSettings.json
+**/.pbi/editorSettings.json
+
+# ---- OS / editors ----
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

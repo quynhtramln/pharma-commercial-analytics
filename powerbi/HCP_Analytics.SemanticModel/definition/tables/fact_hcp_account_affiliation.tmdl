@@ -1,0 +1,132 @@
+table fact_hcp_account_affiliation
+	lineageTag: 04ca875d-18e4-4c2e-8cac-39339ddaaf7a
+
+	column hcp_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 485879cf-a6c1-4070-ba32-3bc260802ae8
+		summarizeBy: none
+		sourceColumn: hcp_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column account_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: de3e748b-a145-4fae-aef5-ec79aad4c4ea
+		summarizeBy: none
+		sourceColumn: account_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Affiliation Role'
+		dataType: string
+		lineageTag: 48a27fb6-126b-4404-a680-f959a1042934
+		summarizeBy: none
+		sourceColumn: Affiliation Role
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Is Primary Affiliation'
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: ff03565c-efa4-41f1-80d6-027a42088a00
+		summarizeBy: none
+		sourceColumn: Is Primary Affiliation
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Affiliation Start'
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 01db409e-6817-4d28-819b-fa980efa3c84
+		summarizeBy: none
+		sourceColumn: Affiliation Start
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'Affiliation End'
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 22491540-8afb-4baf-a515-a217402364ef
+		summarizeBy: none
+		sourceColumn: Affiliation End
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'Affiliation Status'
+		dataType: string
+		lineageTag: 23a70c3b-30b6-4eb5-a5e5-320f0080e8f9
+		summarizeBy: none
+		sourceColumn: Affiliation Status
+
+		annotation SummarizationSetBy = Automatic
+
+	column date_swap_applied
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 83afc40b-ed06-4d1d-a51e-cba9e9c7402c
+		summarizeBy: none
+		sourceColumn: date_swap_applied
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column primary_overlap_flag
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 5444d690-7cfb-4a06-8b2e-d556c119c11e
+		summarizeBy: none
+		sourceColumn: primary_overlap_flag
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column status_date_mismatch_flag
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 26583c9b-708e-442a-bdab-420d048c3686
+		summarizeBy: none
+		sourceColumn: status_date_mismatch_flag
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Primary Label' = IF(fact_hcp_account_affiliation[Is Primary Affiliation], "Yes", "No")
+		lineageTag: 541780d4-10f6-420c-bcc5-5a5905d62b4e
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition fact_hcp_account_affiliation = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Databases(pServer),
+				    New_Project_Healthcare_Pharma_Commercial = Source{[Name=pDatabase]}[Data],
+				    warehouse_fact_hcp_account_affiliation = New_Project_Healthcare_Pharma_Commercial{[Schema="warehouse",Item="fact_hcp_account_affiliation"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(warehouse_fact_hcp_account_affiliation,{{"role", "Affiliation Role"}, {"primary_affiliation", "Is Primary Affiliation"}, {"start_date", "Affiliation Start"}, {"end_date", "Affiliation End"}, {"status", "Affiliation Status"}}),
+				    #"Removed Columns" = Table.RemoveColumns(#"Renamed Columns",{"affiliation_key", "affiliation_id"})
+				in
+				    #"Removed Columns"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

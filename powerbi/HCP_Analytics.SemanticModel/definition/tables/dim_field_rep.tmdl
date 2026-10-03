@@ -1,0 +1,90 @@
+table dim_field_rep
+	lineageTag: 9562a242-63a5-401b-aece-f3b39d89dff3
+
+	column rep_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 4f836455-ba96-4654-997c-abc5063253c0
+		summarizeBy: none
+		sourceColumn: rep_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Rep ID'
+		dataType: string
+		lineageTag: abf37c6d-edaa-49ad-9382-733a97ba69a5
+		summarizeBy: none
+		sourceColumn: Rep ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column Rep
+		dataType: string
+		lineageTag: c244c74b-83ac-4f43-b12a-025bbbe50d65
+		summarizeBy: none
+		sourceColumn: Rep
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Rep Territory'
+		dataType: string
+		lineageTag: 7cc0672e-e130-4912-9f84-416fd3c610af
+		summarizeBy: none
+		sourceColumn: Rep Territory
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Rep Base City'
+		dataType: string
+		lineageTag: 59c9a6cb-7d1d-45c4-9074-4ac4d95cb51f
+		dataCategory: City
+		summarizeBy: none
+		sourceColumn: Rep Base City
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Rep Status'
+		dataType: string
+		lineageTag: 20953a7e-8c9c-47d1-8820-2bb3ffc99ce6
+		summarizeBy: none
+		sourceColumn: Rep Status
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Rep Specialization'
+		dataType: string
+		lineageTag: 1d4d37e6-95e1-43b7-a1e1-43424c3e300b
+		summarizeBy: none
+		sourceColumn: Rep Specialization
+
+		annotation SummarizationSetBy = Automatic
+
+	hierarchy 'Rep by Territory'
+		lineageTag: d6975e93-c7b9-41b6-a6fe-fc04d235efbb
+
+		level 'Rep Territory'
+			lineageTag: 392cdfa3-9e11-4583-9255-ef7d587b13f2
+			column: 'Rep Territory'
+
+		level Rep
+			lineageTag: bc640679-e832-4d55-a2f4-b82aa18f0f27
+			column: Rep
+
+	partition dim_field_rep = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Databases(pServer),
+				    New_Project_Healthcare_Pharma_Commercial = Source{[Name=pDatabase]}[Data],
+				    warehouse_dim_field_rep = New_Project_Healthcare_Pharma_Commercial{[Schema="warehouse",Item="dim_field_rep"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(warehouse_dim_field_rep,{{"rep_id", "Rep ID"}, {"rep_name", "Rep"}, {"territory", "Rep Territory"}, {"base_city", "Rep Base City"}, {"status", "Rep Status"}, {"specialization", "Rep Specialization"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

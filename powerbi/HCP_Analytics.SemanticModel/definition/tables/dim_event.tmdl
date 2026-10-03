@@ -1,0 +1,150 @@
+table dim_event
+	lineageTag: e4a93f07-a0b0-4bdb-a4fb-bf38c2684f2a
+
+	column event_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 905e1938-dcb2-41b1-8398-26f3911b8a74
+		summarizeBy: none
+		sourceColumn: event_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Event ID'
+		dataType: string
+		lineageTag: b55fe418-8700-49e2-aa1f-b5775d62cfa6
+		summarizeBy: none
+		sourceColumn: Event ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column Event
+		dataType: string
+		lineageTag: 60b4b522-3134-41c9-99e9-c2fa383803ba
+		summarizeBy: none
+		sourceColumn: Event
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Event Type'
+		dataType: string
+		lineageTag: 69ea389b-e387-4a59-9ac5-db122d76851f
+		summarizeBy: none
+		sourceColumn: Event Type
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Event Start Date'
+		dataType: dateTime
+		formatString: dd-MMM-yyyy
+		lineageTag: 31a3ce8e-7f28-49d0-9582-31334430f31b
+		summarizeBy: none
+		sourceColumn: Event Start Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+		annotation PBI_FormatHint = {"isCustom":true}
+
+	column 'Event End Date'
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 0332779b-81a4-46b0-893a-48b27fd605d2
+		summarizeBy: none
+		sourceColumn: Event End Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'Event City'
+		dataType: string
+		lineageTag: ded81a2b-fceb-48ff-96d2-63a2efe8dcc0
+		dataCategory: City
+		summarizeBy: none
+		sourceColumn: Event City
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Event Territory'
+		dataType: string
+		lineageTag: f8292921-4dbf-4185-9848-5941b2bad01d
+		summarizeBy: none
+		sourceColumn: Event Territory
+
+		annotation SummarizationSetBy = Automatic
+
+	column product_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 7c972f05-53ac-47b0-91df-c2bae650c78b
+		summarizeBy: none
+		sourceColumn: product_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column budget
+		dataType: double
+		isHidden
+		lineageTag: 11faf940-b08c-46f9-8f45-9b9176833c7e
+		summarizeBy: sum
+		sourceColumn: budget
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Event Status'
+		dataType: string
+		lineageTag: b6555f35-1d97-41bd-aade-8e26da0bb24e
+		summarizeBy: none
+		sourceColumn: Event Status
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Is Pre-launch Event'
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 5d9da540-9536-4af7-8fe2-b956f533d5bc
+		summarizeBy: none
+		sourceColumn: Is Pre-launch Event
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	hierarchy 'Event by Type'
+		lineageTag: 1d871d3f-ea9a-4d9a-955c-62114dd731aa
+
+		level 'Event Type'
+			lineageTag: cd9f5ba1-f673-4396-8f81-fbed61d9252c
+			column: 'Event Type'
+
+		level Event
+			lineageTag: 52aaefd2-448d-47ed-aa4f-2ab9e4307257
+			column: Event
+
+	partition dim_event = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Databases(pServer),
+				    New_Project_Healthcare_Pharma_Commercial = Source{[Name=pDatabase]}[Data],
+				    warehouse_dim_event = New_Project_Healthcare_Pharma_Commercial{[Schema="warehouse",Item="dim_event"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(warehouse_dim_event,{{"event_id", "Event ID"}, {"event_name", "Event"}, {"event_type", "Event Type"}, {"start_date", "Event Start Date"}, {"end_date", "Event End Date"}, {"city", "Event City"}, {"territory", "Event Territory"}, {"status", "Event Status"}, {"pre_launch_event_flag", "Is Pre-launch Event"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

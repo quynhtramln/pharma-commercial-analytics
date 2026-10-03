@@ -1,0 +1,49 @@
+/// Interactions per rep with at least 1 interaction
+table 'FP Event View'
+	lineageTag: 23861f23-0b2f-4b2c-81ca-d616bd0d0c06
+
+	column 'FP Event View'
+		lineageTag: 0c0d9591-b16f-436c-b116-f45a1636d74f
+		summarizeBy: none
+		sourceColumn: [Value1]
+		sortByColumn: 'FP Event View Order'
+
+		relatedColumnDetails
+			groupByColumn: 'FP Event View Fields'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'FP Event View Fields'
+		isHidden
+		lineageTag: 77c99604-8ed0-4bb6-9efc-409601dfed06
+		summarizeBy: none
+		sourceColumn: [Value2]
+		sortByColumn: 'FP Event View Order'
+
+		extendedProperty ParameterMetadata =
+				{
+				  "version": 3,
+				  "kind": 2
+				}
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'FP Event View Order'
+		isHidden
+		formatString: 0
+		lineageTag: 00ff0206-9781-4d4a-92db-21fdd936e9f2
+		summarizeBy: sum
+		sourceColumn: [Value3]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'FP Event View' = calculated
+		mode: import
+		source =
+				{
+				    ("Event type", NAMEOF('dim_event'[Event Type]), 0),
+				    ("Territory", NAMEOF('dim_event'[Event Territory]), 1)
+				}
+
+	annotation PBI_Id = 3f04370330944cbf9b12275794da63be
+

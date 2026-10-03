@@ -1,0 +1,1170 @@
+table _Measures
+	lineageTag: 1820c802-06d0-4ef0-a7bd-8bbdeecd87ff
+
+	/// Fixed as-of date (29 Jun 2026) of the simulated dataset. Used instead of TODAY() in all time-relative logic.
+	measure 'As Of Date' = DATE(2026, 6, 29)
+		formatString: General Date
+		isHidden
+		displayFolder: 0. Base
+		lineageTag: 6a38f953-d8bf-46ed-a2e2-ca835ed5522d
+
+		changedProperty = IsHidden
+
+	/// Sum of sales_amount. Excludes rows with negative quantity or non-positive unit price (Business Rule 6). Sales are attributed to accounts, not HCPs.
+	measure 'Total Sales' =
+			
+			CALCULATE(
+			    SUM(fact_sales[sales_amount]),
+			    fact_sales[negative_quantity_flag] = FALSE(),
+			    fact_sales[non_positive_price_flag] = FALSE()
+			)
+		formatString: \$#,0;(\$#,0);\$#,0
+		displayFolder: 1. Sales
+		lineageTag: b51c4c28-5af2-4ae6-8b71-b74c63396740
+
+	/// Total Sales for the same period last year. Helper for YoY Growth %.
+	measure 'Sales PY' = CALCULATE([Total Sales], SAMEPERIODLASTYEAR(dim_date[Date]))
+		formatString: \$#,0;(\$#,0);\$#,0
+		isHidden
+		displayFolder: 1. Sales
+		lineageTag: 218a0528-0a5f-48a4-8076-8019a9563dc8
+
+		changedProperty = IsHidden
+
+	/// Total Sales vs the same period last year (SAMEPERIODLASTYEAR on dim_date). Blank when there is no prior-year sales.
+	measure 'YoY Growth %' =
+			
+			VAR FirstDataDate = DATE(2023, 1, 1)
+			VAR SelStart = MIN(dim_date[Date])
+			RETURN
+			    IF(
+			        SelStart >= EDATE(FirstDataDate, 12),
+			        DIVIDE([Total Sales] - [Sales PY], [Sales PY])
+			    )
+		formatString: "▲ "0.00%;"▼ "0.00%;0.00%
+		displayFolder: 1. Sales
+		lineageTag: e1d6b772-3453-4134-acd8-ee2c88e9133d
+
+		annotation PBI_FormatHint = {"isCustom":true}
+
+	/// Total Sales in the last 90 days to 29 Jun 2026. Ignores the date slicer.
+	measure 'Sales L90D' =
+			
+			VAR AsOf = [As Of Date]
+			RETURN
+			CALCULATE(
+			    [Total Sales],
+			    REMOVEFILTERS(dim_date),
+			    dim_date[Date] > AsOf - 90,
+			    dim_date[Date] <= AsOf
+			)
+		formatString: \$#,0;(\$#,0);\$#,0
+		displayFolder: 1. Sales
+		lineageTag: e3d6d077-b1f2-4084-ab72-55f558d09dd9
+
+		changedProperty = IsHidden
+
+	/// Total Sales in the 90 days before the last 90 days (to 29 Jun 2026). Ignores the date slicer.
+	measure 'Sales Prior 90D' =
+			
+			VAR AsOf = [As Of Date]
+			RETURN
+			CALCULATE(
+			    [Total Sales],
+			    REMOVEFILTERS(dim_date),
+			    dim_date[Date] > AsOf - 180,
+			    dim_date[Date] <= AsOf - 90
+			)
+		formatString: \$#,0;(\$#,0);\$#,0
+		displayFolder: 1. Sales
+		lineageTag: 12284e4e-13fd-44ab-8a43-d485ee3c79b9
+
+		changedProperty = IsHidden
+
+	/// Sales in the last 90 days vs the prior 90 days, anchored to the as-of date 2026-06-29. Ignores the date slicer. Same logic as tbl_account_growth.
+	measure 'Sales 90D Growth %' = DIVIDE([Sales L90D] - [Sales Prior 90D], [Sales Prior 90D])
+		formatString: "▲ "0.00%;"▼ "0.00%;0.00%
+		displayFolder: 1. Sales
+		lineageTag: 2d39302b-2673-49cf-8af4-c90a3c7e5402
+
+		annotation PBI_FormatHint = {"isCustom":true}
+
+	/// Count of field-force interactions. Includes all interaction rows. Data quality flags are tracked separately on the Data Quality page.
+	measure 'Total Engagement' = COUNTROWS(fact_interactions)
+		formatString: #,0
+		displayFolder: 2. Engagement
+		lineageTag: d5be9f93-e001-40fe-9946-92ec33243bb3
+
+	/// Distinct HCPs with at least one interaction in the current context.
+	measure 'HCPs Engaged' = DISTINCTCOUNT(fact_interactions[hcp_key])
+		formatString: #,0.00
+		isHidden
+		displayFolder: 2. Engagement
+		lineageTag: e4515fd8-9145-48ec-8fa8-b18b3cc3caea
+
+		changedProperty = IsHidden
+
+	/// Average engagement_score across interactions in the current context.
+	measure 'Avg Engagement Score' = AVERAGE(fact_interactions[engagement_score])
+		formatString: #,0.00
+		displayFolder: 2. Engagement
+		lineageTag: c717c960-2806-4e7e-906d-6c480c6e2927
+
+	/// Interactions divided by distinct HCPs engaged. Helper for Engagement Frequency.
+	measure 'Interactions per HCP' = DIVIDE([Total Engagement], [HCPs Engaged])
+		formatString: #,0.00
+		isHidden
+		displayFolder: 2. Engagement
+		lineageTag: 9f5bd7a8-7f1d-46db-af08-132c5f3d5701
+
+		changedProperty = IsHidden
+
+	/// Interactions in the last 90 days to 29 Jun 2026. Helper for Engagement Trend %.
+	measure 'Engagement L90D' =
+			
+			VAR AsOf = [As Of Date]
+			RETURN
+			CALCULATE(
+			    [Total Engagement],
+			    REMOVEFILTERS(dim_date),
+			    dim_date[Date] > AsOf - 90,
+			    dim_date[Date] <= AsOf
+			)
+		formatString: #,0.00
+		isHidden
+		displayFolder: 2. Engagement
+		lineageTag: e7145fab-4695-49d3-96fc-6ff20f58e5b1
+
+		changedProperty = IsHidden
+
+	/// Interactions in the 90 days before the last 90 days. Helper for Engagement Trend %.
+	measure 'Engagement Prior 90D' =
+			
+			VAR AsOf = [As Of Date]
+			RETURN
+			CALCULATE(
+			    [Total Engagement],
+			    REMOVEFILTERS(dim_date),
+			    dim_date[Date] > AsOf - 180,
+			    dim_date[Date] <= AsOf - 90
+			)
+		formatString: #,0.00
+		isHidden
+		displayFolder: 2. Engagement
+		lineageTag: 0a172087-b2d1-4ff9-b336-c7b05d8d72df
+
+		changedProperty = IsHidden
+
+	/// Interactions in the last 90 days vs the prior 90 days, anchored to the as-of date 2026-06-29. Ignores the date slicer.
+	measure 'Engagement Trend %' = DIVIDE([Engagement L90D] - [Engagement Prior 90D], [Engagement Prior 90D])
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 2. Engagement
+		lineageTag: 52ec4a8f-c2c0-4772-b720-c830118a1792
+
+		annotation PBI_FormatHint = {"isCustom":true}
+
+	/// Number of HCPs with status Active. Denominator of Coverage Rate %.
+	measure 'Active HCP Count' =
+			
+			CALCULATE(COUNTROWS(dim_hcp), dim_hcp[HCP Status] = "Active")
+		formatString: 0
+		isHidden
+		displayFolder: 3. Coverage
+		lineageTag: 05de90b4-6b00-4f3b-8af4-035c889146b2
+
+		changedProperty = IsHidden
+
+	/// Distinct Active HCPs with at least one interaction in the current context.
+	measure 'Active HCP Engaged' =
+			
+			CALCULATE(DISTINCTCOUNT(fact_interactions[hcp_key]), dim_hcp[HCP Status] = "Active")
+		formatString: 0
+		displayFolder: 3. Coverage
+		lineageTag: dc5595d7-fc7b-4d31-b82e-c30333c8a05c
+
+	/// Active HCPs engaged divided by all Active HCPs. Valid only when sliced by HCP attributes; for rep-level coverage use Rep Territory Coverage %.
+	measure 'Coverage Rate %' = DIVIDE([Active HCP Engaged], [Active HCP Count])
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 3. Coverage
+		lineageTag: 31603c7e-d932-4695-9887-7f6e90c2de37
+
+	/// Number of accounts with status Active. Denominator of Account Coverage Rate %.
+	measure 'Active Account Count' =
+			
+			CALCULATE(COUNTROWS(dim_account), dim_account[Account Status] = "Active")
+		formatString: 0
+		isHidden
+		displayFolder: 3. Coverage
+		lineageTag: 49759f2e-8027-4635-a13e-ec024ac4d95b
+
+		changedProperty = IsHidden
+
+	/// Count of HCP event registrations, including future events.
+	measure 'Total Registrations' = COUNTROWS(fact_event_registrations)
+		formatString: #,0
+		displayFolder: 4. Events
+		lineageTag: 0b4386e0-8ecd-43ba-ab64-5ed3c1532ff2
+
+	/// Registrations with attendance status Attended.
+	measure 'Attended Count' = ```
+			
+			       VAR AsOf = [As Of Date]
+			       RETURN
+			       CALCULATE(
+			           COUNTROWS(fact_event_registrations),
+			           fact_event_registrations[Attendance Status] = "Attended",
+			           dim_event[Event Start Date] <= AsOf   -- fix found in SQL reconciliation: exclude future events (ISS-066)
+			       )
+			```
+		formatString: 0
+		isHidden
+		displayFolder: 4. Events
+		lineageTag: b7d93451-a080-4f65-8734-24f435b683a1
+
+		changedProperty = IsHidden
+
+	/// Attended registrations divided by registrations for events that started on or before the as-of date 2026-06-29. Future events are excluded because they cannot have attendance yet.
+	measure 'Attendance Rate %' = DIVIDE([Attended Count], [Registrations (Past Events)])
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 4. Events
+		lineageTag: 91db203f-3ee0-4d05-95df-7bea3d46da56
+
+	/// Registrations flagged as requiring follow-up.
+	measure 'Follow-up Required' =
+			
+			CALCULATE(COUNTROWS(fact_event_registrations), fact_event_registrations[Requires Follow-up] = TRUE())
+		formatString: 0
+		isHidden
+		displayFolder: 4. Events
+		lineageTag: 08b469e0-b978-44e1-9e85-399c9af9f226
+
+		changedProperty = IsHidden
+
+	/// Total Sales for the previous month. Helper for MoM Growth %.
+	measure 'Sales PM' = CALCULATE([Total Sales], DATEADD(dim_date[Date], -1, MONTH))
+		formatString: \$#,0;(\$#,0);\$#,0
+		isHidden
+		displayFolder: 1. Sales
+		lineageTag: a0dd5a42-7639-4bd2-8ddb-4341d6762d9b
+
+		changedProperty = IsHidden
+
+	/// Total Sales vs the previous month. Use on monthly axes; on a card use MoM Growth % (Latest Month).
+	measure 'MoM Growth %' = DIVIDE([Total Sales] - [Sales PM], [Sales PM])
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 1. Sales
+		lineageTag: 024322b5-b22b-4166-bba1-46a639eeaac1
+
+	/// Latest month in the selected period vs the month before. Capped at the as-of date 2026-06-29, so June 2026 is a partial month.
+	measure 'MoM Growth % (Latest Month)' =
+			
+			VAR EndD = MIN(MAX(dim_date[Date]), [As Of Date])
+			VAR CurStart = DATE(YEAR(EndD), MONTH(EndD), 1)
+			VAR PrevStart = EDATE(CurStart, -1)
+			VAR CurDays = INT(EndD - CurStart) + 1
+			VAR PrevDays = INT(CurStart - PrevStart)
+			VAR CurSales =
+			    CALCULATE([Total Sales], REMOVEFILTERS(dim_date),
+			        dim_date[Date] >= CurStart, dim_date[Date] <= EndD)
+			VAR PrevSales =
+			    CALCULATE([Total Sales], REMOVEFILTERS(dim_date),
+			        dim_date[Date] >= PrevStart, dim_date[Date] < CurStart)
+			RETURN
+			    DIVIDE(DIVIDE(CurSales, CurDays) - DIVIDE(PrevSales, PrevDays), DIVIDE(PrevSales, PrevDays))
+		formatString: "▲ "0.00%;"▼ "0.00%;0.00%
+		displayFolder: 1. Sales
+		lineageTag: 1091d091-1e10-4aa3-bdcf-4a89344b3aa5
+
+		annotation PBI_FormatHint = {"isCustom":true}
+
+	/// Total sales_amount divided by total quantity, on the same cleaned row set (negative quantity and non-positive price excluded).
+	measure 'Avg Unit Price' =
+			
+			CALCULATE(
+			    DIVIDE(SUM(fact_sales[sales_amount]), SUM(fact_sales[quantity])),
+			    fact_sales[negative_quantity_flag] = FALSE(),
+			    fact_sales[non_positive_price_flag] = FALSE()
+			)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		displayFolder: 1. Sales
+		lineageTag: b205cc15-786e-4c2a-aff0-53f1c4d23dff
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	/// Share of Total Sales within the current slicer selection (ALLSELECTED on accounts).
+	measure 'Revenue Contribution %' =
+			
+			DIVIDE([Total Sales], CALCULATE([Total Sales], ALLSELECTED(dim_account)))
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 1. Sales
+		lineageTag: 93912530-75fb-4f85-8479-2a0f493b4235
+
+	/// Text: the account territory with the highest Sales 90D Growth %, with its growth rate.
+	measure 'Highlight - Top Growth Territory' =
+			
+			VAR T =
+			    FILTER(
+			        ADDCOLUMNS(VALUES(dim_account[Account Territory]), "@g", [Sales 90D Growth %]),
+			        NOT ISBLANK([@g])
+			    )
+			VAR Top1 = TOPN(1, T, [@g], DESC)
+			RETURN
+			    "Top growth territory: " & MAXX(Top1, dim_account[Account Territory])
+			        & ", " & FORMAT(MAXX(Top1, [@g]), "+0.0%;-0.0%") & " vs the previous 90 days"
+		displayFolder: 1. Sales
+		lineageTag: ec179683-1afc-4f59-aeea-ca29a2d801bc
+
+	/// Number of months in the current context that have at least one interaction. Helper for Engagement Frequency.
+	measure 'Months in Period' =
+			
+			COUNTROWS(
+			    FILTER(SUMMARIZE(dim_date, dim_date[Year], dim_date[Month No]), [Total Engagement] > 0)
+			)
+		formatString: 0
+		isHidden
+		displayFolder: 2. Engagement
+		lineageTag: bc5f72db-575f-4047-a5f4-d47cc3943ff5
+
+		changedProperty = IsHidden
+
+	/// Interactions per engaged HCP per month (months counted only where interactions exist). Shown as Visit Frequency on Field Force pages.
+	measure 'Engagement Frequency' = DIVIDE([Interactions per HCP], [Months in Period])
+		formatString: 0.00
+		displayFolder: 2. Engagement
+		lineageTag: beb43a3d-e1a9-4417-a6e8-4236c5307fdb
+
+	/// Interactions linked to products where priority_flag = Y.
+	measure 'Interactions (Priority Products)' =
+			
+			CALCULATE([Total Engagement], dim_product[Priority Product] = TRUE())
+		formatString: 0
+		displayFolder: 2. Engagement
+		lineageTag: 719d5a8e-575d-43b7-bcf2-03951d11c21e
+
+	/// Share of interactions linked to priority products.
+	measure 'Priority Product Engagement %' =
+			
+			DIVIDE([Interactions (Priority Products)], [Total Engagement])
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 2. Engagement
+		lineageTag: 4535e858-e725-426c-8aaf-e50935abdc11
+
+	/// Text: the priority product with the most interactions in the current context (for example, one HCP). Ties are listed together.
+	measure 'Top Priority Product' =
+			
+			VAR T =
+			    ADDCOLUMNS(
+			        CALCULATETABLE(
+			            SUMMARIZE(fact_interactions, dim_product[Product]),
+			            dim_product[Priority Product] = TRUE()
+			        ),
+			        "@n", CALCULATE(COUNTROWS(fact_interactions))
+			    )
+			VAR Top1 = TOPN(1, T, [@n], DESC)
+			RETURN MAXX(Top1, dim_product[Product])
+		displayFolder: 2. Engagement
+		lineageTag: 15868aea-966f-4b11-8d4e-7151c37a8a99
+
+	/// Most recent interaction date in the current context.
+	measure 'Last Visit Date' = MAXX(fact_interactions, RELATED(dim_date[Date]))
+		formatString: dd-MMM-yyyy
+		displayFolder: 2. Engagement
+		lineageTag: 7c0ad652-76b3-4842-9bc3-710e9a8b8c59
+
+		annotation PBI_FormatHint = {"isCustom":true}
+
+	/// Text: the HCP ID with the most interactions in the current context. HCP names are excluded for privacy (PII).
+	measure 'Top HCP (by Interactions)' =
+			
+			VAR T =
+			    FILTER(
+			        ADDCOLUMNS(VALUES(dim_hcp[HCP ID]), "@n", [Total Engagement]),
+			        [@n] > 0
+			    )
+			RETURN MAXX(TOPN(1, T, [@n], DESC), dim_hcp[HCP ID])
+		displayFolder: 2. Engagement
+		lineageTag: c0ca3aa7-8baf-4fd3-a7e9-e44ed0c02508
+
+	/// Distinct Active accounts with at least one interaction in the current context.
+	measure 'Active Accounts Engaged' =
+			
+			CALCULATE(DISTINCTCOUNT(fact_interactions[account_key]), dim_account[Account Status] = "Active")
+		formatString: 0
+		isHidden
+		displayFolder: 3. Coverage
+		lineageTag: 4f53d6d5-e8a6-4316-9b33-e7ded2ad81f6
+
+		changedProperty = IsHidden
+
+	/// Active accounts with at least one interaction divided by all Active accounts.
+	measure 'Account Coverage Rate %' = DIVIDE([Active Accounts Engaged], [Active Account Count])
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 3. Coverage
+		lineageTag: dee39816-7a59-47c6-9e56-4a450580d1ce
+
+	/// Interactions per rep with at least one interaction in the current context.
+	measure 'Rep Productivity' =
+			
+			DIVIDE([Total Engagement], DISTINCTCOUNT(fact_interactions[rep_key]))
+		formatString: 0
+		displayFolder: 3. Coverage
+		lineageTag: 4f6d5919-e42f-435c-ab07-dd03b7c1d35a
+
+	/// Coverage from tbl_rep_coverage, measured at territory level, not per individual rep (20 to 87 reps share a territory; no rep-HCP assignment data). Static: does not respond to the date slicer.
+	measure 'Rep Territory Coverage %' =
+			
+			DIVIDE(AVERAGE(tbl_rep_coverage[Territory Coverage Rate]), 100)
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 3. Coverage
+		lineageTag: ef5df4dc-693f-4366-8101-d7cbc7f97923
+
+	/// Registrations for events that started on or before 29 Jun 2026. Denominator of Attendance Rate % and No-show Rate %.
+	measure 'Registrations (Past Events)' =
+			
+			VAR AsOf = [As Of Date]
+			RETURN CALCULATE(COUNTROWS(fact_event_registrations), dim_event[Event Start Date] <= AsOf)
+		formatString: 0
+		isHidden
+		displayFolder: 4. Events
+		lineageTag: 9c212008-c1cc-4777-bcc6-390490e83659
+
+		changedProperty = IsHidden
+
+	/// Registrations with status No-show for events that started on or before 29 Jun 2026.
+	measure 'No-show Count' =
+			
+			VAR AsOf = [As Of Date]
+			RETURN
+			CALCULATE(
+			    COUNTROWS(fact_event_registrations),
+			    fact_event_registrations[Attendance Status] = "No-show",
+			    dim_event[Event Start Date] <= AsOf
+			)
+		formatString: 0
+		isHidden
+		displayFolder: 4. Events
+		lineageTag: 5e231686-2315-44a2-9e36-9d4444d4e0dd
+
+		changedProperty = IsHidden
+
+	/// No-show registrations divided by registrations for past events (as-of date 2026-06-29).
+	measure 'No-show Rate %' = DIVIDE([No-show Count], [Registrations (Past Events)])
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 4. Events
+		lineageTag: d18195c7-7199-4201-82f6-1e83daa2a40a
+
+	/// Registrations that require follow-up and have follow-up status Completed.
+	measure 'Follow-up Completed' =
+			
+			CALCULATE(
+			    COUNTROWS(fact_event_registrations),
+			    fact_event_registrations[Requires Follow-up] = TRUE(),
+			    fact_event_registrations[Follow-up Status] = "Completed"
+			)
+		formatString: 0
+		isHidden
+		displayFolder: 4. Events
+		lineageTag: 57b0edde-e793-4e42-a42f-c2acfea13026
+
+		changedProperty = IsHidden
+
+	/// Completed follow-ups divided by registrations that require follow-up.
+	measure 'Follow-up Completion %' = DIVIDE([Follow-up Completed], [Follow-up Required])
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 4. Events
+		lineageTag: 48f29622-bf3b-459d-bfa9-c86203d83a1c
+
+	/// Interactions of HCPs with an Active affiliation to the account, via the HCP-account affiliation bridge. Not additive across accounts, because one HCP can be affiliated to several accounts.
+	measure 'Engagement Index' =
+			
+			VAR AffHCP =
+			    CALCULATETABLE(
+			        VALUES(fact_hcp_account_affiliation[hcp_key]),
+			        fact_hcp_account_affiliation[Affiliation Status] = "Active"
+			    )
+			RETURN
+			    CALCULATE([Total Engagement], REMOVEFILTERS(dim_account), TREATAS(AffHCP, dim_hcp[hcp_key]))
+		formatString: #,0
+		displayFolder: 5. Engagement-Sales Gap
+		lineageTag: 20f3b898-aad5-48f6-8485-ea229eef9d28
+
+	/// Median Engagement Index across the accounts in the current filter. Base for the engagement threshold.
+	measure 'Median Account Engagement' =
+			
+			MEDIANX(ALLSELECTED(dim_account), [Engagement Index])
+		formatString: 0.00
+		isHidden
+		displayFolder: 5. Engagement-Sales Gap
+		lineageTag: d64dd494-35df-4895-a32a-d7052a234b58
+
+		changedProperty = IsHidden
+
+	/// Median Total Sales across the accounts in the current filter. Base for the sales threshold.
+	measure 'Median Account Sales' =
+			
+			MEDIANX(ALLSELECTED(dim_account), [Total Sales])
+		formatString: 0.00
+		isHidden
+		displayFolder: 5. Engagement-Sales Gap
+		lineageTag: ed423d4e-77fa-45f3-8291-8539de5b59d9
+
+		changedProperty = IsHidden
+
+	/// Number of accounts with Engagement Index at or above the engagement threshold and Total Sales below the sales threshold. Thresholds = median x What-if multiplier (default 1 = median, matching tbl_account_opportunity). Shows association only; engagement does not prove sales causality.
+	measure 'Engagement-Sales Gap Accounts' =
+			
+			VAR EngCut = [Median Account Engagement] * [Engagement Threshold Value]
+			VAR SalesCut = [Median Account Sales] * [Sales Threshold Value]
+			RETURN
+			    COUNTROWS(
+			        FILTER(VALUES(dim_account[account_key]),
+			            [Engagement Index] >= EngCut && [Total Sales] < SalesCut)
+			    )
+		formatString: 0
+		displayFolder: 5. Engagement-Sales Gap
+		lineageTag: 76d72fc2-6f55-4375-8e34-c87d23887f78
+
+	/// Account Total Sales divided by the average sales of accounts of the same account type. 100% = peer average. A proxy for commercial penetration, because no market-potential data is available.
+	measure 'Sales vs Peer Avg %' =
+			
+			VAR PeerTbl =
+			    CALCULATETABLE(
+			        ADDCOLUMNS(VALUES(dim_account[Account Type]),
+			            "@peer", CALCULATE(AVERAGEX(VALUES(dim_account[account_key]), [Total Sales]))),
+			        REMOVEFILTERS(dim_account)
+			    )
+			RETURN
+			    AVERAGEX(
+			        VALUES(dim_account[account_key]),
+			        VAR AccType = CALCULATE(SELECTEDVALUE(dim_account[Account Type]))
+			        VAR Peer = MAXX(FILTER(PeerTbl, dim_account[Account Type] = AccType), [@peer])
+			        RETURN DIVIDE([Total Sales], Peer)
+			    )
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 5. Engagement-Sales Gap
+		lineageTag: 906e9f60-5d61-48b2-9c5c-3e78b9cca9f3
+
+	/// Text: count of High Engagement / Low Sales accounts at default thresholds (1 x median).
+	measure 'Highlight - Gap Accounts' =
+			
+			FORMAT([Engagement-Sales Gap Accounts], "#,0")
+			    & " accounts show high HCP engagement but low sales (all data to 29 Jun 2026)"
+		displayFolder: 5. Engagement-Sales Gap
+		lineageTag: 994a9515-df68-4da6-b70b-675d85981d20
+
+	/// Total Sales of the HCP's primary Active account(s). Sales belong to accounts, not HCPs (Business Rule 1). HCPs with overlapping primary affiliations (ISS-016) sum both accounts.
+	measure 'Primary Account Sales' =
+			
+			VAR PrimAcc =
+			    TOPN(
+			        1,
+			        CALCULATETABLE(
+			            SUMMARIZE(
+			                fact_hcp_account_affiliation,
+			                fact_hcp_account_affiliation[account_key],
+			                fact_hcp_account_affiliation[Affiliation Start]
+			            ),
+			            fact_hcp_account_affiliation[Is Primary Affiliation] = TRUE(),
+			            fact_hcp_account_affiliation[Affiliation Status] = "Active"
+			        ),
+			        fact_hcp_account_affiliation[Affiliation Start], DESC
+			    )
+			RETURN
+			    CALCULATE(
+			        [Total Sales],
+			        TREATAS(
+			            SELECTCOLUMNS(PrimAcc, "k", fact_hcp_account_affiliation[account_key]),
+			            dim_account[account_key]
+			        )
+			    )
+		formatString: \$#,0;(\$#,0);\$#,0
+		displayFolder: 6. Opportunity
+		lineageTag: 19099389-90ff-4d01-b80a-de33c970d391
+
+	/// Rows affected per flag, based on the DQ Flag Catalog. Counts every flag, including resolved and informational ones. A row with two flags is counted once per flag.
+	measure 'DQ Flag Rows' =
+			
+			SUMX(
+			    VALUES('DQ Flag Catalog'[Flag Key]),
+			    SWITCH('DQ Flag Catalog'[Flag Key],
+			        1,  CALCULATE(COUNTROWS(fact_sales), fact_sales[pre_launch_sales_flag] = TRUE()),
+			        2,  CALCULATE(COUNTROWS(fact_sales), fact_sales[negative_quantity_flag] = TRUE()),
+			        3,  CALCULATE(COUNTROWS(fact_sales), fact_sales[non_positive_price_flag] = TRUE()),
+			        4,  CALCULATE(COUNTROWS(fact_sales), fact_sales[missing_sales_channel_flag] = TRUE()),
+			        5,  CALCULATE(COUNTROWS(fact_sales), fact_sales[missing_invoice_number_flag] = TRUE()),
+			        6,  CALCULATE(COUNTROWS(fact_sales), fact_sales[amount_mismatch_flag] = TRUE()),
+			        7,  CALCULATE(COUNTROWS(fact_interactions), fact_interactions[pre_hire_interaction_flag] = TRUE()),
+			        8,  CALCULATE(COUNTROWS(fact_interactions), fact_interactions[negative_duration_flag] = TRUE()),
+			        9,  CALCULATE(COUNTROWS(fact_interactions), fact_interactions[missing_outcome_flag] = TRUE()),
+			        10, CALCULATE(COUNTROWS(fact_event_registrations), fact_event_registrations[registration_after_event_flag] = TRUE()),
+			        11, CALCULATE(COUNTROWS(fact_event_registrations), fact_event_registrations[missing_attendance_for_past_event_flag] = TRUE()),
+			        12, CALCULATE(COUNTROWS(fact_hcp_account_affiliation), fact_hcp_account_affiliation[date_swap_applied] = TRUE()),
+			        13, CALCULATE(COUNTROWS(fact_hcp_account_affiliation), fact_hcp_account_affiliation[primary_overlap_flag] = TRUE()),
+			        14, CALCULATE(COUNTROWS(fact_hcp_account_affiliation), fact_hcp_account_affiliation[status_date_mismatch_flag] = TRUE()),
+			        15, CALCULATE(COUNTROWS(fact_campaign), fact_campaign[missing_campaign_name_flag] = TRUE()),
+			        16, CALCULATE(COUNTROWS(fact_campaign), fact_campaign[missing_campaign_type_flag] = TRUE()),
+			        17, CALCULATE(COUNTROWS(fact_campaign), fact_campaign[missing_status_flag] = TRUE()),
+			        18, CALCULATE(COUNTROWS(fact_campaign), fact_campaign[start_after_end_flag] = TRUE()),
+			        19, CALCULATE(COUNTROWS(fact_campaign), fact_campaign[negative_target_hcp_count_flag] = TRUE()),
+			        20, CALCULATE(COUNTROWS(dim_event), dim_event[Is Pre-launch Event] = TRUE())
+			    )
+			)
+		formatString: #,0
+		displayFolder: 7. Data Quality
+		lineageTag: 5d9bb647-808e-4e34-9389-47cf390d58a8
+
+	/// Total rows of the source table(s) in context, per the DQ Flag Catalog. Denominator for DQ percentages.
+	measure 'DQ Table Rows' =
+			
+			SUMX(
+			    VALUES('DQ Flag Catalog'[Table]),
+			    SWITCH('DQ Flag Catalog'[Table],
+			        "fact_sales", COUNTROWS(fact_sales),
+			        "fact_interactions", COUNTROWS(fact_interactions),
+			        "fact_event_registrations", COUNTROWS(fact_event_registrations),
+			        "fact_hcp_account_affiliation", COUNTROWS(fact_hcp_account_affiliation),
+			        "fact_campaign", COUNTROWS(fact_campaign),
+			        "dim_event", COUNTROWS(dim_event)
+			    )
+			)
+		formatString: 0
+		isHidden
+		displayFolder: 7. Data Quality
+		lineageTag: b323f04a-46c3-489a-9bb1-2b0817363789
+
+		changedProperty = IsHidden
+
+	/// DQ Flag Rows divided by the total rows of the flag's source table.
+	measure 'DQ Flag % of Table' = DIVIDE([DQ Flag Rows], [DQ Table Rows])
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 7. Data Quality
+		lineageTag: 5b467919-3805-486b-a212-87e4ca376087
+
+	/// Rows with at least one open flag that counts toward the DQ score. Excludes Date Swap Applied (resolved) and Pre-launch Event (valid activity). Responds to the Table, Severity and Flag Type slicers.
+	measure 'DQ Flagged Rows' =
+			
+			VAR Sel =
+			    CALCULATETABLE(
+			        VALUES('DQ Flag Catalog'[Flag Key]),
+			        'DQ Flag Catalog'[In DQ Score] = TRUE()
+			    )
+			RETURN
+			SUMX(
+			    VALUES('DQ Flag Catalog'[Table]),
+			    SWITCH('DQ Flag Catalog'[Table],
+			        "fact_sales",
+			            COUNTROWS(FILTER(fact_sales,
+			                (1 IN Sel && fact_sales[pre_launch_sales_flag])
+			                || (2 IN Sel && fact_sales[negative_quantity_flag])
+			                || (3 IN Sel && fact_sales[non_positive_price_flag])
+			                || (4 IN Sel && fact_sales[missing_sales_channel_flag])
+			                || (5 IN Sel && fact_sales[missing_invoice_number_flag])
+			                || (6 IN Sel && fact_sales[amount_mismatch_flag]))),
+			        "fact_interactions",
+			            COUNTROWS(FILTER(fact_interactions,
+			                (7 IN Sel && fact_interactions[pre_hire_interaction_flag])
+			                || (8 IN Sel && fact_interactions[negative_duration_flag])
+			                || (9 IN Sel && fact_interactions[missing_outcome_flag]))),
+			        "fact_event_registrations",
+			            COUNTROWS(FILTER(fact_event_registrations,
+			                (10 IN Sel && fact_event_registrations[registration_after_event_flag])
+			                || (11 IN Sel && fact_event_registrations[missing_attendance_for_past_event_flag]))),
+			        "fact_hcp_account_affiliation",
+			            COUNTROWS(FILTER(fact_hcp_account_affiliation,
+			                (13 IN Sel && fact_hcp_account_affiliation[primary_overlap_flag])
+			                || (14 IN Sel && fact_hcp_account_affiliation[status_date_mismatch_flag]))),
+			        "fact_campaign",
+			            COUNTROWS(FILTER(fact_campaign,
+			                (15 IN Sel && fact_campaign[missing_campaign_name_flag])
+			                || (16 IN Sel && fact_campaign[missing_campaign_type_flag])
+			                || (17 IN Sel && fact_campaign[missing_status_flag])
+			                || (18 IN Sel && fact_campaign[start_after_end_flag])
+			                || (19 IN Sel && fact_campaign[negative_target_hcp_count_flag]))),
+			        "dim_event", 0
+			    )
+			)
+		formatString: 0
+		displayFolder: 7. Data Quality
+		lineageTag: 575df35a-eaf6-44b4-afc5-a5746ff5baa1
+
+	/// 1 minus DQ Flagged Rows divided by total rows. By table when sliced by Table; overall otherwise. The overall score is weighted by row count, so fact_sales dominates.
+	measure 'DQ Score %' = 1 - DIVIDE([DQ Flagged Rows], [DQ Table Rows])
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 7. Data Quality
+		lineageTag: b80ad4f7-e15f-4c5e-945a-06ce2bf35b1c
+
+	/// Number of source tables with DQ Score % below the DQ Target parameter (default 95%).
+	measure 'Tables Below DQ Target' =
+			
+			COUNTROWS(FILTER(VALUES('DQ Flag Catalog'[Table]), [DQ Score %] < [DQ Target Value]))
+		formatString: 0
+		displayFolder: 7. Data Quality
+		lineageTag: c4699ca8-f4d0-49fb-b591-0995c131c4cf
+
+	/// Text: number of source tables below the DQ target, out of 6.
+	measure 'Highlight - DQ Tables' =
+			
+			[Tables Below DQ Target] & " of " & COUNTROWS(ALL('DQ Flag Catalog'[Table]))
+			    & " source tables are below the data quality target"
+		displayFolder: 7. Data Quality
+		lineageTag: e613ceb1-2762-4826-8c42-5b36f90e0e0e
+
+	/// Change in sales value: last 90 days minus the previous 90 days, to 29 Jun 2026. Used to rank accounts so small accounts with a large % change do not dominate.
+	measure 'Sales Growth (90D)' = [Sales L90D] - [Sales Prior 90D]
+		formatString: \$#,0;(\$#,0);\$#,0
+		displayFolder: 1. Sales
+		lineageTag: e33d26d2-d20b-4c77-9c9c-b131f8b61e16
+
+		changedProperty = IsHidden
+
+	/// Account's share of total company sales in the last 90 days to 29 Jun 2026. Ignores account filters in the denominator.
+	measure 'Revenue Contribution % (L90D)' =
+			
+			DIVIDE([Sales L90D], CALCULATE([Sales L90D], REMOVEFILTERS(dim_account)))
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 1. Sales
+		lineageTag: 3342e72a-76be-447b-aaa2-636070c4ed00
+
+	/// Gap accounts as a share of all accounts in the current filter.
+	measure 'Gap Accounts %' =
+			
+			DIVIDE(
+			    [Engagement-Sales Gap Accounts],
+			    COUNTROWS(VALUES(dim_account[account_key]))
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 5. Engagement-Sales Gap
+		lineageTag: 4fdc24d2-b7f6-40bf-82c8-62a851d45473
+
+	/// Engagement threshold = median account engagement × the Engagement Threshold multiplier. Drives the vertical line on the scatter.
+	measure 'Engagement Cut' = [Median Account Engagement] * [Engagement Threshold Value]
+		isHidden
+		displayFolder: 5. Engagement-Sales Gap
+		lineageTag: 1c5b8d8e-8d62-4bc1-bcde-ba680c70d047
+
+		changedProperty = IsHidden
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	/// Sales threshold = median account sales × the Sales Threshold multiplier. Drives the horizontal line on the scatter.
+	measure 'Sales Cut' = [Median Account Sales] * [Sales Threshold Value]
+		isHidden
+		displayFolder: 5. Engagement-Sales Gap
+		lineageTag: 8113c536-a112-4a42-881c-2b74fed13066
+
+		changedProperty = IsHidden
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	/// Text showing the absolute cut-offs currently applied: engagement ≥ median × engagement multiplier, sales < median × sales multiplier.
+	measure 'Current Thresholds' =
+			
+			"Engagement ≥ " & FORMAT([Engagement Cut], "#,0")
+			    & "  ·  Sales < " & FORMAT([Sales Cut], "$#,0")
+		displayFolder: 5. Engagement-Sales Gap
+		lineageTag: 7c19f68c-d564-4b1f-86d3-4f7ce9b06825
+
+	/// Absolute value of sales on rows excluded from Total Sales (negative quantity or non-positive unit price).
+	measure 'Sales Excluded by DQ' =
+			
+			CALCULATE(
+			    SUMX(fact_sales, ABS(fact_sales[sales_amount])),
+			    FILTER(
+			        fact_sales,
+			        fact_sales[negative_quantity_flag] || fact_sales[non_positive_price_flag]
+			    )
+			)
+		formatString: \$#,0;(\$#,0);\$#,0
+		displayFolder: 7. Data Quality
+		lineageTag: e9613edb-cde1-4af5-9144-958a4e99ef78
+
+	/// Sales Excluded by DQ as a share of gross absolute sales.
+	measure 'Sales Excluded by DQ %' =
+			
+			DIVIDE(
+			    [Sales Excluded by DQ],
+			    SUMX(fact_sales, ABS(fact_sales[sales_amount]))
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 7. Data Quality
+		lineageTag: 3f34c5ca-a55f-4ded-bfac-90fcca031adc
+
+	/// Rank of the account by Sales Growth (90D), highest first, within the current filter. Blank when more than one account is in context.
+	measure 'Account Rank' =
+			
+			IF(
+			    HASONEVALUE(dim_account[account_key]),
+			    RANKX(ALLSELECTED(dim_account), [Sales Growth (90D)], , DESC)
+			)
+		formatString: 0
+		displayFolder: 1. Sales
+		lineageTag: 88d162b3-2b8d-428b-97e7-4d10b356951a
+
+	/// Number of accounts in the Growing tier (90-day sales growth above the 67th percentile, to 29 Jun 2026).
+	measure 'Growing Accounts' =
+			
+			CALCULATE(COUNTROWS(tbl_account_growth), tbl_account_growth[Growth Tier] = "Growing")
+		formatString: 0
+		displayFolder: 1. Sales
+		lineageTag: aad693a4-ee7c-415e-bd1b-4b83b364254c
+
+	/// Number of products in the Rising momentum tier (90-day sales growth above the 67th percentile, to 29 Jun 2026).
+	measure 'Rising Products' =
+			
+			CALCULATE(COUNTROWS(tbl_product_momentum), tbl_product_momentum[Momentum Tier] = "Rising")
+		formatString: 0
+		displayFolder: 1. Sales
+		lineageTag: 69ac16a9-2eb4-45ea-9d14-7db0252b9307
+
+	/// Number of products in the Declining momentum tier (90-day sales growth below the 33rd percentile, to 29 Jun 2026).
+	measure 'Declining Products' =
+			
+			CALCULATE(COUNTROWS(tbl_product_momentum), tbl_product_momentum[Momentum Tier] = "Declining")
+		formatString: 0
+		displayFolder: 1. Sales
+		lineageTag: 06cf1064-a76b-4a0d-aa9a-ff1b7fcd7a30
+
+	/// Number of accounts in tbl_account_growth. Use with Growth Tier to count accounts per tier.
+	measure 'Accounts by Tier' = COUNTROWS(tbl_account_growth)
+		formatString: 0
+		displayFolder: 1. Sales
+		lineageTag: 421c8a2b-b360-446e-aa10-d277f04239f9
+
+	/// Text for the Overview badge, e.g. "Data trust: 72.9%".
+	measure 'DQ Trust Label' = "Data trust: " & FORMAT([DQ Score %], "0.0%")
+		isHidden
+		displayFolder: 7. Data Quality
+		lineageTag: d355bb24-81e6-4823-8cbd-1f4a80d6c469
+
+		changedProperty = IsHidden
+
+	/// Badge fill colour: green when DQ Score % meets the target, amber otherwise.
+	measure 'DQ Badge Background' =
+			
+			IF([DQ Score %] >= [DQ Target Value], "#E8F5E9", "#FFF4E5")
+		isHidden
+		displayFolder: 7. Data Quality
+		lineageTag: 1ffbe8ef-69a0-41b6-80b1-f8bb3f4c488d
+
+		changedProperty = IsHidden
+
+	/// Badge text colour: dark green when DQ Score % meets the target, dark amber otherwise.
+	measure 'DQ Badge Font' =
+			
+			IF([DQ Score %] >= [DQ Target Value], "#1B5E20", "#8A4B00")
+		isHidden
+		displayFolder: 7. Data Quality
+		lineageTag: b4ff0cac-f54e-408a-a685-a96b85eec6ae
+
+		changedProperty = IsHidden
+
+	/// Title text for the Sales-by-product tooltip page: the hovered month, or a generic title above month level.
+	measure 'TT Month Label' =
+			
+			IF(
+			    HASONEVALUE(dim_date[Year Month]),
+			    SELECTEDVALUE(dim_date[Year Month]) & " · top 5 products",
+			    "Top 5 products"
+			)
+		isHidden
+		displayFolder: 1. Sales
+		lineageTag: 3fb5ca85-a28e-4b81-810e-2e979a2c3006
+
+		changedProperty = IsHidden
+
+	/// Text for the Momentum tier column: the product's tier at product level, or the count of rising and declining products at therapeutic-area level.
+	measure 'Momentum Tier Label' =
+			
+			IF(
+			    ISINSCOPE(dim_product[Product]),
+			    SELECTEDVALUE(tbl_product_momentum[Momentum Tier]),
+			    VAR RisingN =
+			        CALCULATE(COUNTROWS(tbl_product_momentum), tbl_product_momentum[Momentum Tier] = "Rising")
+			    VAR DecliningN =
+			        CALCULATE(COUNTROWS(tbl_product_momentum), tbl_product_momentum[Momentum Tier] = "Declining")
+			    RETURN
+			        FORMAT(RisingN + 0, "0") & " rising · " & FORMAT(DecliningN + 0, "0") & " declining"
+			)
+		isHidden
+		displayFolder: 1. Sales
+		lineageTag: 76bce40a-d1b1-4e6b-8100-395ab6ce4191
+
+		changedProperty = IsHidden
+
+	/// Font colour for the Momentum tier column: blue for Rising, red for Declining, grey otherwise.
+	measure 'Momentum Tier Color' =
+			
+			SWITCH(
+			    [Momentum Tier Label],
+			    "Rising", "#1565C0",
+			    "Declining", "#C62828",
+			    "#546E7A"
+			)
+		isHidden
+		displayFolder: 1. Sales
+		lineageTag: ce797e03-18a8-435a-9b5a-4d560681c317
+
+		changedProperty = IsHidden
+
+	/// Each month's average daily sales as % change vs July 2025. Per-day figures remove distortion from short or partial months.
+	measure 'Sales vs Jul 2025 %' =
+			
+			VAR AsOf = [As Of Date]
+			VAR BaseStart = EOMONTH(AsOf, -12) + 1
+			VAR BaseEnd = EOMONTH(BaseStart, 0)
+			VAR BaseSales =
+			    CALCULATE([Total Sales], REMOVEFILTERS(dim_date),
+			        dim_date[Date] >= BaseStart, dim_date[Date] <= BaseEnd)
+			VAR BaseAvgPerDay = DIVIDE(BaseSales, INT(BaseEnd - BaseStart) + 1)
+			VAR CurDays = COUNTROWS(FILTER(VALUES(dim_date[Date]), dim_date[Date] <= AsOf))
+			VAR CurAvgPerDay = DIVIDE([Total Sales], CurDays)
+			RETURN DIVIDE(CurAvgPerDay, BaseAvgPerDay) - 1
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 1. Sales
+		lineageTag: fc724f55-9de5-402b-84ff-65dd730e033f
+
+	/// Plain-language reading of Engagement Frequency, e.g. "≈ 1 contact every 2.1 months per HCP".
+	measure 'Interaction Frequency Label' =
+			
+			VAR F = [Engagement Frequency]
+			RETURN
+			    IF(
+			        F > 0,
+			        "≈ 1 contact every " & FORMAT(DIVIDE(1, F), "0.0") & " months per HCP"
+			    )
+		isHidden
+		displayFolder: 2. Engagement
+		lineageTag: c8458fec-5c26-487d-83d3-03c4b153009d
+
+		changedProperty = IsHidden
+
+	/// Context bar text on Account detail, e.g. "Showing: Healthcare Account 01047 · all time".
+	measure 'Selected Account Label' =
+			
+			"Showing: " & SELECTEDVALUE(dim_account[Account], "multiple accounts") & " · all time"
+		isHidden
+		displayFolder: 8. Drillthrough
+		lineageTag: b46efab8-d2f8-4032-8b8d-5ab5529cb351
+
+		changedProperty = IsHidden
+
+	/// Context bar text on HCP detail.
+	measure 'Selected HCP Label' =
+			
+			"Showing: " & SELECTEDVALUE(dim_hcp[HCP ID], "multiple HCPs") & " · all time"
+		isHidden
+		displayFolder: 8. Drillthrough
+		lineageTag: 877970b9-0c8a-4b7c-849d-a7c8b7c43dca
+
+		changedProperty = IsHidden
+
+	/// Units sold, excluding rows with negative quantity or non-positive unit price (same exclusions as Total Sales).
+	measure 'Total Quantity' =
+			
+			CALCULATE(
+			    SUM(fact_sales[quantity]),
+			    fact_sales[negative_quantity_flag] = FALSE(),
+			    fact_sales[non_positive_price_flag] = FALSE()
+			)
+		formatString: #,0
+		displayFolder: 1. Sales
+		lineageTag: e51586d2-e76f-4654-af23-d7f87d9908d3
+
+	/// Number of HCP–account affiliation rows in context. Used as a visual filter so affiliation tables show only real affiliations.
+	measure 'Affiliation Count' = COUNTROWS(fact_hcp_account_affiliation)
+		formatString: 0
+		isHidden
+		displayFolder: 8. Drillthrough
+		lineageTag: 56ccb303-e33b-4825-862a-960630652b2c
+
+		changedProperty = IsHidden
+
+	/// HCP's interactions across all accounts. Sums to the account's Engagement Index.
+	measure 'HCP Interactions (All Accounts)' =
+			
+			CALCULATE([Total Engagement], REMOVEFILTERS(dim_account))
+		formatString: 0
+		displayFolder: 8. Drillthrough
+		lineageTag: 8b13bc6d-8361-4a8c-9dfa-85ba80171b10
+
+	/// HCP's average engagement score across all accounts, not only the account being viewed.
+	measure 'HCP Avg Score (All Accounts)' =
+			
+			CALCULATE([Avg Engagement Score], REMOVEFILTERS(dim_account))
+		displayFolder: 8. Drillthrough
+		lineageTag: 311c395b-4a0f-4492-bc79-8a989ada0768
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	/// Context bar text on Rep detail.
+	measure 'Selected Rep Label' =
+			
+			"Showing: " & SELECTEDVALUE(dim_field_rep[Rep], "multiple reps") & " · all time"
+		isHidden
+		displayFolder: 8. Drillthrough
+		lineageTag: c4904099-dc7b-4aa6-8ffb-a3a4a71275bf
+
+		changedProperty = IsHidden
+
+	/// Colour rule for the scatter: red for gap accounts (high engagement, sales below threshold), light blue otherwise.
+	measure 'Gap Dot Color' =
+			
+			IF([Engagement-Sales Gap Accounts] = 1, "#C62828", "#90CAF9")
+		isHidden
+		displayFolder: 5. Engagement-Sales Gap
+		lineageTag: a5a6e4e7-f2bb-4d84-8595-d98f438e9a72
+
+		changedProperty = IsHidden
+
+	/// Name of the hovered account, shown as the title of the Account profile tooltip.
+	measure 'Tooltip Account Name' = SELECTEDVALUE(dim_account[Account])
+		isHidden
+		displayFolder: 5. Engagement-Sales Gap
+		lineageTag: 2d32e80a-0d53-4a69-99a0-9018171c8027
+
+		changedProperty = IsHidden
+
+	/// Number of accounts in the selected opportunity segment(s). Segments are fixed at 29 Jun 2026 (median split of engagement and sales).
+	measure 'Accounts in Segment' =
+			
+			CALCULATE(
+			    COUNTROWS(tbl_account_opportunity),
+			    KEEPFILTERS(TREATAS(VALUES(Segment[Segment]), tbl_account_opportunity[Opportunity Quadrant]))
+			)
+		formatString: 0
+		displayFolder: 6. Opportunity
+		lineageTag: 436fa76c-d186-4b79-bc00-c4b404a18e48
+
+	/// Number of HCPs in the selected segment(s). Each HCP inherits the segment of its most recent active primary account.
+	measure 'HCPs in Segment' =
+			
+			CALCULATE(
+			    COUNTROWS(tbl_hcp_opportunity),
+			    KEEPFILTERS(TREATAS(VALUES(Segment[Segment]), tbl_hcp_opportunity[Opportunity Quadrant]))
+			)
+		formatString: #,0
+		displayFolder: 6. Opportunity
+		lineageTag: 7f0fa77d-ab46-4918-abeb-d2aa1d19676c
+
+	/// Returns 1 when the account belongs to a segment selected in the Segment slicer. Used as a visual filter on the Accounts table.
+	measure 'Account In Segment Flag' = IF([Accounts in Segment] > 0, 1)
+		formatString: 0
+		isHidden
+		displayFolder: 6. Opportunity
+		lineageTag: 0cb09b94-f9f8-417b-8677-a643316c75b4
+
+		changedProperty = IsHidden
+
+	/// Returns 1 when the HCP belongs to a segment selected in the Segment slicer. Used as a visual filter on the HCPs table.
+	measure 'HCP In Segment Flag' = IF([HCPs in Segment] > 0, 1)
+		formatString: 0
+		isHidden
+		displayFolder: 6. Opportunity
+		lineageTag: 179d6e51-723f-4a67-95fa-18f2856cc864
+
+		changedProperty = IsHidden
+
+	/// Bar colour on Quality score by table: red below the DQ target, blue at or above it.
+	measure 'DQ Bar Color' =
+			
+			IF([DQ Score %] < [DQ Target Value], "#C62828", "#1565C0")
+		isHidden
+		displayFolder: 7. Data Quality
+		lineageTag: 481ce2a0-00de-4032-9825-b362540d53bb
+
+		changedProperty = IsHidden
+
+	/// Source column checked by the selected flag, from the DQ Flag Catalog.
+	measure 'Flag Column' = SELECTEDVALUE('DQ Flag Catalog'[Column])
+		displayFolder: 7. Data Quality
+		lineageTag: e50d6031-d13f-4cb0-a560-44b3dc48c921
+
+	/// Severity of the selected flag, from the DQ Flag Catalog (maintained in the Data Quality Issues Log).
+	measure 'Flag Severity' = SELECTEDVALUE('DQ Flag Catalog'[Severity])
+		displayFolder: 7. Data Quality
+		lineageTag: c8ee774d-5157-47bc-b68f-95fff6bb4b0b
+
+	/// Definition line under the Sales excluded card: excluded sales as % of gross sales.
+	measure 'Sales Excluded Label' =
+			
+			FORMAT([Sales Excluded by DQ %], "0.00%") & " of gross sales removed by DQ rules"
+		isHidden
+		displayFolder: 7. Data Quality
+		lineageTag: e6716ae2-7657-4215-9f3e-8f690576d044
+
+		changedProperty = IsHidden
+
+	/// Definition line under the DQ score card: current target and number of tables below it.
+	measure 'DQ Score Label' =
+			
+			"Target " & FORMAT([DQ Target Value], "0%") & " · "
+			    & [Tables Below DQ Target] & " of 6 tables below target"
+		isHidden
+		displayFolder: 7. Data Quality
+		lineageTag: 4a84dcd0-5f9e-45ae-ab99-39ed2917e1fa
+
+		changedProperty = IsHidden
+
+	/// Font colour for the YoY growth cards: green when sales grew vs the same period last year, red when they fell, grey when blank or zero.
+	measure 'Growth Color' =
+			
+			VAR g = [YoY Growth %]
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        ISBLANK(g), "#546E7A",
+			        g > 0, "#2E7D32",
+			        g < 0, "#C62828",
+			        "#546E7A"
+			    )
+		isHidden
+		displayFolder: 1. Sales
+		lineageTag: f596f396-1176-4b4c-b8df-f07cd74b76c9
+
+		changedProperty = IsHidden
+
+	/// Font colour for the 90-day growth card: green when sales grew vs the previous 90 days, red when they fell, grey when blank or zero.
+	measure 'Growth 90D Color' =
+			
+			VAR g = [Sales 90D Growth %]
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        ISBLANK(g), "#546E7A",
+			        g > 0, "#2E7D32",
+			        g < 0, "#C62828",
+			        "#546E7A"
+			    )
+		displayFolder: 1. Sales
+		lineageTag: 4407b3c5-0ac2-4b06-8a34-3de34de1c196
+
+	/// Font colour for the month-on-month growth card: green when the latest month grew vs the previous month, red when it fell, grey when blank or zero.
+	measure 'MoM Growth Color' =
+			
+			VAR g = [MoM Growth % (Latest Month)]
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        ISBLANK(g), "#546E7A",
+			        g > 0, "#2E7D32",
+			        g < 0, "#C62828",
+			        "#546E7A"
+			    )
+		isHidden
+		displayFolder: 1. Sales
+		lineageTag: 20e36ecc-b8ec-4c14-b5f9-35f682e29022
+
+		changedProperty = IsHidden
+
+	partition _Measures = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i44FAA==", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [Column1 = _t]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Column1", type text}}),
+				    #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"Column1"})
+				in
+				    #"Removed Columns"
+
+	annotation PBI_ResultType = Table
+

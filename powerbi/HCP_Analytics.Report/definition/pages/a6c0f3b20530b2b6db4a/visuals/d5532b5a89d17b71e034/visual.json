@@ -1,0 +1,154 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "d5532b5a89d17b71e034",
+  "position": {
+    "x": 242,
+    "y": 654,
+    "z": 10000,
+    "height": 40,
+    "width": 1016,
+    "tabOrder": 10000
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "HOW TO USE",
+                    "textStyle": {
+                      "fontWeight": "bold",
+                      "fontSize": "8pt",
+                      "color": "#7a4300"
+                    }
+                  },
+                  {
+                    "value": " · ",
+                    "textStyle": {
+                      "fontSize": "8pt",
+                      "color": "#546e7a"
+                    }
+                  },
+                  {
+                    "value": "In Power BI Desktop, hold Ctrl while clicking any button",
+                    "textStyle": {
+                      "fontStyle": "italic",
+                      "fontSize": "8pt",
+                      "color": "#546e7a"
+                    }
+                  },
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontWeight": "bold",
+                      "fontSize": "8pt"
+                    }
+                  },
+                  {
+                    "value": "· ",
+                    "textStyle": {
+                      "fontSize": "8pt",
+                      "color": "#546e7a"
+                    }
+                  },
+                  {
+                    "value": "Custom tooltip",
+                    "textStyle": {
+                      "fontWeight": "bold",
+                      "fontSize": "8pt",
+                      "color": "#7a4300"
+                    }
+                  },
+                  {
+                    "value": " - hover a chart point for details · ",
+                    "textStyle": {
+                      "fontSize": "8pt",
+                      "color": "#546e7a"
+                    }
+                  },
+                  {
+                    "value": "Drillthrough",
+                    "textStyle": {
+                      "fontWeight": "bold",
+                      "fontSize": "8pt",
+                      "color": "#7a4300"
+                    }
+                  },
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontWeight": "bold",
+                      "fontSize": "8pt",
+                      "color": "#546e7a"
+                    }
+                  },
+                  {
+                    "value": "- right-click a row or dot, choose ",
+                    "textStyle": {
+                      "fontSize": "8pt",
+                      "color": "#546e7a"
+                    }
+                  },
+                  {
+                    "value": "Drill through",
+                    "textStyle": {
+                      "fontStyle": "italic",
+                      "fontSize": "8pt",
+                      "color": "#333333"
+                    }
+                  },
+                  {
+                    "value": ", then pick the detail page · ",
+                    "textStyle": {
+                      "fontSize": "8pt",
+                      "color": "#546e7a"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Field parameter",
+                    "textStyle": {
+                      "fontWeight": "bold",
+                      "fontSize": "8pt",
+                      "color": "#7a4300"
+                    }
+                  },
+                  {
+                    "value": " - use \"View by\" to switch a chart's breakdown · ",
+                    "textStyle": {
+                      "fontSize": "8pt",
+                      "color": "#546e7a"
+                    }
+                  },
+                  {
+                    "value": "Bookmark",
+                    "textStyle": {
+                      "fontWeight": "bold",
+                      "fontSize": "8pt",
+                      "color": "#7a4300"
+                    }
+                  },
+                  {
+                    "value": " - switch between table and chart view",
+                    "textStyle": {
+                      "fontSize": "8pt",
+                      "color": "#546e7a"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

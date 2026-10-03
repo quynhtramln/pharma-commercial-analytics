@@ -1,0 +1,48 @@
+table 'FP Rep View'
+	lineageTag: df0ce84f-ec16-41c6-beac-a8fda158db12
+
+	column 'FP Rep View'
+		lineageTag: b21c4061-5bb4-4874-b939-7c4ea695f09e
+		summarizeBy: none
+		sourceColumn: [Value1]
+		sortByColumn: 'FP Rep View Order'
+
+		relatedColumnDetails
+			groupByColumn: 'FP Rep View Fields'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'FP Rep View Fields'
+		isHidden
+		lineageTag: 3cc105db-a687-4312-b258-1fd246c463a2
+		summarizeBy: none
+		sourceColumn: [Value2]
+		sortByColumn: 'FP Rep View Order'
+
+		extendedProperty ParameterMetadata =
+				{
+				  "version": 3,
+				  "kind": 2
+				}
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'FP Rep View Order'
+		isHidden
+		formatString: 0
+		lineageTag: 0829d002-51da-45ba-8cad-837711f55392
+		summarizeBy: sum
+		sourceColumn: [Value3]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'FP Rep View' = calculated
+		mode: import
+		source =
+				{
+				    ("Territory", NAMEOF('dim_field_rep'[Rep Territory]), 0),
+				    ("Specialization", NAMEOF('dim_field_rep'[Rep Specialization]), 1)
+				}
+
+	annotation PBI_Id = cb742e1519c94e4dacad55cb3ea781a2
+

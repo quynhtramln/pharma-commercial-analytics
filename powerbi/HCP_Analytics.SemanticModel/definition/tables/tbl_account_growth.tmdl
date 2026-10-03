@@ -1,0 +1,68 @@
+table tbl_account_growth
+	lineageTag: ccb50fa7-62e1-475c-b76c-84c1cb120162
+
+	column account_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 2f7a5d6d-d28a-4c96-b38b-e9a5a04f3578
+		summarizeBy: none
+		sourceColumn: account_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column current_period_sales
+		dataType: double
+		lineageTag: 50fcefce-4af4-42dd-b347-8fcf3718aece
+		summarizeBy: none
+		sourceColumn: current_period_sales
+
+		annotation SummarizationSetBy = User
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column prior_period_sales
+		dataType: double
+		lineageTag: 43aac1aa-b6ca-417e-aa52-394cb75ac7bb
+		summarizeBy: none
+		sourceColumn: prior_period_sales
+
+		annotation SummarizationSetBy = User
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column growth_pct
+		dataType: double
+		lineageTag: 36d6aa9d-3dc2-4718-83f3-fef139222485
+		summarizeBy: none
+		sourceColumn: growth_pct
+
+		annotation SummarizationSetBy = User
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Growth Tier'
+		dataType: string
+		lineageTag: 006974f1-a7f5-45f1-9cea-be7a3cf51004
+		summarizeBy: none
+		sourceColumn: Growth Tier
+
+		annotation SummarizationSetBy = Automatic
+
+	partition tbl_account_growth = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Databases(pServer),
+				    New_Project_Healthcare_Pharma_Commercial = Source{[Name=pDatabase]}[Data],
+				    mart_tbl_account_growth = New_Project_Healthcare_Pharma_Commercial{[Schema="mart",Item="tbl_account_growth"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(mart_tbl_account_growth,{{"growth_tier", "Growth Tier"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

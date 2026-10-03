@@ -1,0 +1,90 @@
+table dim_hcp
+	lineageTag: 6de45043-6721-48b7-8963-7c9b6c4d43ff
+
+	column hcp_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 4a4d7285-1944-4aa8-aaf7-dcf00a94fde7
+		summarizeBy: none
+		sourceColumn: hcp_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'HCP ID'
+		dataType: string
+		lineageTag: b2cbef4c-b9db-4ed9-a832-7521e94b209e
+		summarizeBy: none
+		sourceColumn: HCP ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'HCP Type'
+		dataType: string
+		lineageTag: f6c6fd15-22eb-4a0e-8fac-32efbd73d381
+		summarizeBy: none
+		sourceColumn: HCP Type
+
+		annotation SummarizationSetBy = Automatic
+
+	column Specialty
+		dataType: string
+		lineageTag: 2665e25d-83eb-4632-ab0e-d23c7510817f
+		summarizeBy: none
+		sourceColumn: Specialty
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'HCP City'
+		dataType: string
+		lineageTag: b8cb4c75-9091-4357-83a6-5aaa8d34eec3
+		dataCategory: City
+		summarizeBy: none
+		sourceColumn: HCP City
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'HCP Territory'
+		dataType: string
+		lineageTag: 39e8aaae-c162-4660-bb59-eadc1b8ace1a
+		summarizeBy: none
+		sourceColumn: HCP Territory
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'HCP Status'
+		dataType: string
+		lineageTag: f2fe8b2f-d3f0-4273-b37b-63293f5a89fe
+		summarizeBy: none
+		sourceColumn: HCP Status
+
+		annotation SummarizationSetBy = Automatic
+
+	hierarchy 'HCP by Specialty'
+		lineageTag: 09c4d2e7-ec7f-4561-a6d7-da1c1d2c015a
+
+		level Specialty
+			lineageTag: d5bcd9f4-4c8f-46c3-96b9-bfcf423e0c8f
+			column: Specialty
+
+		level 'HCP ID'
+			lineageTag: dab90029-208d-4bb4-a689-9105d6bb9354
+			column: 'HCP ID'
+
+	partition dim_hcp = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Databases(pServer),
+				    New_Project_Healthcare_Pharma_Commercial = Source{[Name=pDatabase]}[Data],
+				    warehouse_dim_hcp = New_Project_Healthcare_Pharma_Commercial{[Schema="warehouse",Item="dim_hcp"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(warehouse_dim_hcp,{{"hcp_id", "HCP ID"}, {"hcp_type", "HCP Type"}, {"specialty", "Specialty"}, {"city", "HCP City"}, {"territory", "HCP Territory"}, {"status", "HCP Status"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

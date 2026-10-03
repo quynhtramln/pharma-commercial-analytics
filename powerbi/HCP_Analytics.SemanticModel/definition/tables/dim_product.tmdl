@@ -1,0 +1,109 @@
+table dim_product
+	lineageTag: a292c6a3-b66e-452f-aa2a-2c8b07ad9c2f
+
+	column product_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 7e7554cb-6fdd-4375-a777-a69bcc7545cd
+		summarizeBy: none
+		sourceColumn: product_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Product ID'
+		dataType: string
+		lineageTag: 13d10c70-8b2e-4d65-9e85-1f2220bb66be
+		summarizeBy: none
+		sourceColumn: Product ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column Product
+		dataType: string
+		lineageTag: 8ec190f9-d652-4902-b48c-03e6f5c74a42
+		summarizeBy: none
+		sourceColumn: Product
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Therapeutic Area'
+		dataType: string
+		lineageTag: 58b9473b-9c89-47e6-9282-c08286685071
+		summarizeBy: none
+		sourceColumn: Therapeutic Area
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Product Type'
+		dataType: string
+		lineageTag: 89bae7a2-316e-416b-b579-63d5551751cf
+		summarizeBy: none
+		sourceColumn: Product Type
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Priority Product'
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 11939af9-3fbe-48f6-85b0-224eb9718b1c
+		summarizeBy: none
+		sourceColumn: Priority Product
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Launch Date'
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: a0cce4b0-99fc-461b-8b74-51df2dc6075f
+		summarizeBy: none
+		sourceColumn: Launch Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'Product Status'
+		dataType: string
+		lineageTag: 2acc33e4-c991-477c-9526-0b545ea61f02
+		summarizeBy: none
+		sourceColumn: Product Status
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Priority Product Label' = IF(dim_product[Priority Product], "Yes", "No")
+		lineageTag: 4c599780-cb56-480b-8afb-f7093c026552
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	hierarchy 'Product by Therapeutic Area'
+		lineageTag: e22174bd-fe55-439d-991c-3d700715a2fe
+
+		level 'Therapeutic Area'
+			lineageTag: af0c3249-5c46-40ae-9dbc-0ce0fcd96638
+			column: 'Therapeutic Area'
+
+		level Product
+			lineageTag: 18244e6f-f431-4a9c-81fe-e4c6b37ed94f
+			column: Product
+
+	partition dim_product = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Databases(pServer),
+				    New_Project_Healthcare_Pharma_Commercial = Source{[Name=pDatabase]}[Data],
+				    warehouse_dim_product = New_Project_Healthcare_Pharma_Commercial{[Schema="warehouse",Item="dim_product"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(warehouse_dim_product,{{"product_id", "Product ID"}, {"product_name", "Product"}, {"therapeutic_area", "Therapeutic Area"}, {"product_type", "Product Type"}, {"priority_flag", "Priority Product"}, {"launch_date", "Launch Date"}, {"status", "Product Status"}}),
+				    #"Replaced Value" = Table.ReplaceValue(#"Renamed Columns","","Unassigned",Replacer.ReplaceValue,{"Therapeutic Area"}),
+				    #"Replaced Value1" = Table.ReplaceValue(#"Replaced Value",null,"Unassigned",Replacer.ReplaceValue,{"Therapeutic Area"})
+				in
+				    #"Replaced Value1"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

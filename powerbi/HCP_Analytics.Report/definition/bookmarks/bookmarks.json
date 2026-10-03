@@ -1,0 +1,13 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/bookmarksMetadata/1.0.0/schema.json",
+  "items": [
+    {
+      "name": "1dd8ea4b136718c4e666",
+      "displayName": "Leaderboard",
+      "children": [
+        "6f82b82366d815081865",
+        "36de42a3911534bad1bd"
+      ]
+    }
+  ]
+}

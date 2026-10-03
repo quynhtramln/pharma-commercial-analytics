@@ -1,0 +1,66 @@
+table tbl_rep_coverage
+	lineageTag: aed3d70f-89e5-4d45-86e4-282b0535905c
+
+	column rep_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: f5910def-aadc-4109-94be-47e3f5b1c4e6
+		summarizeBy: none
+		sourceColumn: rep_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column total_active_hcp_in_territory
+		dataType: int64
+		formatString: 0
+		lineageTag: a7ca0de1-c172-4258-82f1-d2cc555968f9
+		summarizeBy: none
+		sourceColumn: total_active_hcp_in_territory
+
+		annotation SummarizationSetBy = User
+
+	column visited_active_hcp
+		dataType: int64
+		formatString: 0
+		lineageTag: a6f0a1e7-64dd-4443-a571-59a87020764d
+		summarizeBy: none
+		sourceColumn: visited_active_hcp
+
+		annotation SummarizationSetBy = User
+
+	column 'Territory Coverage Rate'
+		dataType: double
+		lineageTag: 9458362b-0af0-49e2-8ee7-a135cd511374
+		summarizeBy: none
+		sourceColumn: Territory Coverage Rate
+
+		annotation SummarizationSetBy = User
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column rep_performance_tier
+		dataType: string
+		lineageTag: 83d47527-542d-4aa9-a6fd-e2fed216d8e9
+		summarizeBy: none
+		sourceColumn: rep_performance_tier
+
+		annotation SummarizationSetBy = Automatic
+
+	partition tbl_rep_coverage = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Databases(pServer),
+				    New_Project_Healthcare_Pharma_Commercial = Source{[Name=pDatabase]}[Data],
+				    mart_tbl_rep_coverage = New_Project_Healthcare_Pharma_Commercial{[Schema="mart",Item="tbl_rep_coverage"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(mart_tbl_rep_coverage,{{"coverage_rate_pct", "Territory Coverage Rate"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

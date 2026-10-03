@@ -1,0 +1,96 @@
+table tbl_product_momentum
+	lineageTag: 7b5074c5-f2d7-4d43-8ac1-af9331ba3c7d
+
+	column product_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 6a70c363-9ba9-4ee8-aea2-9ca2a49bad64
+		summarizeBy: none
+		sourceColumn: product_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column current_sales
+		dataType: double
+		lineageTag: b3aa4328-40e0-4d27-a844-23dad13a5b92
+		summarizeBy: none
+		sourceColumn: current_sales
+
+		annotation SummarizationSetBy = User
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column prior_sales
+		dataType: double
+		lineageTag: 18206f2d-5097-4c49-8b3e-c5c5ac12c1c1
+		summarizeBy: none
+		sourceColumn: prior_sales
+
+		annotation SummarizationSetBy = User
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Sales Momentum %'
+		dataType: double
+		lineageTag: 224fc326-d99b-45f3-8922-d9109c7b9388
+		summarizeBy: none
+		sourceColumn: Sales Momentum %
+
+		annotation SummarizationSetBy = User
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column current_interactions
+		dataType: int64
+		formatString: 0
+		lineageTag: c22ff815-91d8-478b-b068-12600e047b26
+		summarizeBy: none
+		sourceColumn: current_interactions
+
+		annotation SummarizationSetBy = User
+
+	column prior_interactions
+		dataType: int64
+		formatString: 0
+		lineageTag: 4f7460d0-fb91-4726-8b73-4cc56c4aa808
+		summarizeBy: none
+		sourceColumn: prior_interactions
+
+		annotation SummarizationSetBy = User
+
+	column 'Product Engagement Trend %'
+		dataType: double
+		lineageTag: ed792f5e-884e-47c5-9b2c-359b35e8dc31
+		summarizeBy: none
+		sourceColumn: Product Engagement Trend %
+
+		annotation SummarizationSetBy = User
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Momentum Tier'
+		dataType: string
+		lineageTag: 80471601-9f9a-44e5-a366-27728085164d
+		summarizeBy: none
+		sourceColumn: Momentum Tier
+
+		annotation SummarizationSetBy = Automatic
+
+	partition tbl_product_momentum = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Databases(pServer),
+				    New_Project_Healthcare_Pharma_Commercial = Source{[Name=pDatabase]}[Data],
+				    mart_tbl_product_momentum = New_Project_Healthcare_Pharma_Commercial{[Schema="mart",Item="tbl_product_momentum"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(mart_tbl_product_momentum,{{"momentum_tier", "Momentum Tier"}, {"sales_momentum_pct", "Sales Momentum %"}, {"engagement_trend_pct", "Product Engagement Trend %"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

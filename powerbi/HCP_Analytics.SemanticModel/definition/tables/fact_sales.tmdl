@@ -1,0 +1,188 @@
+table fact_sales
+	lineageTag: 7dcf9a9b-fc0e-431e-8c06-b39742d6e5d1
+
+	column date_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 78f2df6f-f569-45f0-a563-ae1c73ea754a
+		summarizeBy: none
+		sourceColumn: date_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column account_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: bd548aff-def9-49e1-9750-2dd9a36424d5
+		summarizeBy: none
+		sourceColumn: account_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column product_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 3d87a85b-f4b5-4624-bf05-a0bcff185af4
+		summarizeBy: none
+		sourceColumn: product_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Sales Channel'
+		dataType: string
+		lineageTag: 6b55e033-7dab-4984-a1bf-86183196b266
+		summarizeBy: none
+		sourceColumn: Sales Channel
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Order Type'
+		dataType: string
+		lineageTag: 2bdba740-bb6b-4587-bdb3-282ce6b51228
+		summarizeBy: none
+		sourceColumn: Order Type
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Invoice Number'
+		dataType: string
+		lineageTag: e0a38803-8977-4f42-987e-4b9962980da5
+		summarizeBy: none
+		sourceColumn: Invoice Number
+
+		annotation SummarizationSetBy = Automatic
+
+	column quantity
+		dataType: int64
+		formatString: 0
+		lineageTag: c651a2ee-b3c0-4252-afd7-3af45f4a6d63
+		summarizeBy: sum
+		sourceColumn: quantity
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column unit_price
+		dataType: double
+		isHidden
+		lineageTag: 5eb0cc3a-dee8-48b8-96b7-56a200979923
+		summarizeBy: sum
+		sourceColumn: unit_price
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column sales_amount
+		dataType: double
+		isHidden
+		lineageTag: 855b6636-8eba-4ce3-9243-8f45118360eb
+		summarizeBy: sum
+		sourceColumn: sales_amount
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column pre_launch_sales_flag
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: f9ad4392-e414-4e28-907e-e69f75e2acca
+		summarizeBy: none
+		sourceColumn: pre_launch_sales_flag
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column negative_quantity_flag
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: caf95148-d8b0-4f62-8d59-166f1e6d075b
+		summarizeBy: none
+		sourceColumn: negative_quantity_flag
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column non_positive_price_flag
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: a450f914-e0bf-4440-a0e4-136fe6a9a697
+		summarizeBy: none
+		sourceColumn: non_positive_price_flag
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column missing_sales_channel_flag
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: b5385521-1103-4d41-9d42-f0416bb4cfd8
+		summarizeBy: none
+		sourceColumn: missing_sales_channel_flag
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column missing_invoice_number_flag
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: fe2a6b0a-6cc7-41c1-9ca1-3acabc1e5529
+		summarizeBy: none
+		sourceColumn: missing_invoice_number_flag
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column amount_mismatch_flag
+		dataType: boolean
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 2b1e136d-a64a-4056-9dad-98823f6ada29
+		summarizeBy: none
+		sourceColumn: amount_mismatch_flag
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	partition fact_sales = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Databases(pServer),
+				    New_Project_Healthcare_Pharma_Commercial = Source{[Name=pDatabase]}[Data],
+				    warehouse_fact_sales = New_Project_Healthcare_Pharma_Commercial{[Schema="warehouse",Item="fact_sales"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(warehouse_fact_sales,{{"sales_channel", "Sales Channel"}, {"order_type", "Order Type"}, {"invoice_number", "Invoice Number"}}),
+				    #"Removed Columns" = Table.RemoveColumns(#"Renamed Columns",{"sales_key", "sales_id", "territory"})
+				in
+				    #"Removed Columns"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

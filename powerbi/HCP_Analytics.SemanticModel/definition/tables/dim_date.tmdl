@@ -1,0 +1,180 @@
+table dim_date
+	lineageTag: 58f4f82e-5701-463d-94a6-85f9e12f4e4a
+	dataCategory: Time
+
+	column date_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 5fd55704-cb96-4058-9fef-fc79c014a4b4
+		summarizeBy: none
+		sourceColumn: date_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column Date
+		dataType: dateTime
+		isKey
+		formatString: dd-MMM-yyyy
+		lineageTag: 34bf5349-792c-404f-8190-0b1ec10e6f5f
+		summarizeBy: none
+		sourceColumn: Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+		annotation PBI_FormatHint = {"isCustom":true}
+
+	column Year
+		dataType: int64
+		formatString: 0
+		lineageTag: 5a71cf2a-d471-40bf-a259-fd43099b1e8b
+		summarizeBy: none
+		sourceColumn: Year
+
+		annotation SummarizationSetBy = User
+
+	column 'Quarter No'
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: bcb559a6-e975-4377-ac26-5e5bb1f030db
+		summarizeBy: sum
+		sourceColumn: Quarter No
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Month No'
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 25676684-3093-4987-8cc4-8a4aef403c1f
+		summarizeBy: sum
+		sourceColumn: Month No
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column Month
+		dataType: string
+		lineageTag: 0e1bbbca-2f88-49b5-af61-9f1c181f11de
+		summarizeBy: none
+		sourceColumn: Month
+		sortByColumn: 'Month No'
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column Day
+		dataType: int64
+		formatString: 0
+		lineageTag: 0d7d705a-e20c-4140-ada5-72142bc730d1
+		summarizeBy: none
+		sourceColumn: Day
+
+		annotation SummarizationSetBy = User
+
+	column day_of_week
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: e19616d7-0439-4169-a3ef-7c7beec411b7
+		summarizeBy: sum
+		sourceColumn: day_of_week
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column Weekday
+		dataType: string
+		lineageTag: e40fabdf-7d00-4bf2-b1bc-eb06be0691e4
+		summarizeBy: none
+		sourceColumn: Weekday
+		sortByColumn: day_of_week
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Is Weekend'
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 3975d0b1-620b-4471-bd09-39098e41fb10
+		summarizeBy: none
+		sourceColumn: Is Weekend
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Is Last 12M' =
+			
+			dim_date[Date] > EOMONTH(DATE(2026, 6, 29), -12)
+			    && dim_date[Date] <= DATE(2026, 6, 29)
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 1f9799af-9ffc-43e7-811c-d49c3956ba2c
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quarter = "Q" & dim_date[Quarter No]
+		lineageTag: 12251298-4b2e-4708-9287-44762edd7c1a
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Year Month' = FORMAT(dim_date[Date], "MMM yyyy")
+		lineageTag: 3563c9e0-84e1-4a49-b98a-1bd26a70e38d
+		summarizeBy: none
+		sortByColumn: 'Year Month Sort'
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Year Month Sort' = dim_date[Year] * 100 + dim_date[Month No]
+		isHidden
+		formatString: 0
+		lineageTag: caa5336c-8327-418f-9f8b-59e697f0ffea
+		summarizeBy: sum
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	hierarchy 'Date Hierarchy'
+		lineageTag: e2e2b8bb-5bf4-41fd-b197-397b2594f1d2
+
+		level Year
+			lineageTag: 1008c2c7-84ee-4636-aff8-08f6cd846887
+			column: Year
+
+		level Quarter
+			lineageTag: a80df9a0-30b2-4d1f-8105-7a113fadf9b1
+			column: Quarter
+
+		level Month
+			lineageTag: 3e262948-9462-43c1-8ffa-87d0e19c22de
+			column: Month
+
+	partition dim_date = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Databases(pServer),
+				    New_Project_Healthcare_Pharma_Commercial = Source{[Name=pDatabase]}[Data],
+				    warehouse_dim_date = New_Project_Healthcare_Pharma_Commercial{[Schema="warehouse",Item="dim_date"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(warehouse_dim_date,{{"full_date", "Date"}, {"year", "Year"}, {"quarter", "Quarter No"}, {"month", "Month No"}, {"month_name", "Month"}, {"day", "Day"}, {"day_name", "Weekday"}, {"is_weekend", "Is Weekend"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

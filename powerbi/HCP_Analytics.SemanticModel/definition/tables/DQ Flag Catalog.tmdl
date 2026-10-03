@@ -1,0 +1,105 @@
+table 'DQ Flag Catalog'
+	lineageTag: 4c94aced-6fd3-4d46-8749-4bd5f901633d
+
+	column Column
+		lineageTag: d97ac769-ca26-4db5-a99e-ea1a407ab733
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Column]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Flag Key'
+		isHidden
+		formatString: 0
+		lineageTag: b3a11161-11f4-40a1-8826-e258e81b1f59
+		summarizeBy: count
+		isNameInferred
+		sourceColumn: [Flag Key]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Table
+		lineageTag: 4d0e7a4d-d7cd-492d-ab89-62dbaaf4f973
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Table]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Flag Type'
+		lineageTag: 9fb15ebe-6bf5-4fe8-9725-eeb38094a0fd
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Flag Type]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Severity
+		lineageTag: 54b2d7a0-4883-45b7-911a-49c3135dee91
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Severity]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'In DQ Score'
+		isHidden
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 7b05fbd4-6751-4afe-8146-3258ed54c8b1
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [In DQ Score]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Table Label' =
+			
+			SWITCH(
+			    'DQ Flag Catalog'[Table],
+			    "fact_sales", "Sales",
+			    "fact_interactions", "Interactions",
+			    "fact_event_registrations", "Registrations",
+			    "fact_hcp_account_affiliation", "Affiliations",
+			    "fact_campaign", "Campaigns",
+			    "dim_event", "Events",
+			    'DQ Flag Catalog'[Table]
+			)
+		lineageTag: 15353d11-d65f-499e-bc5f-08bd6d739781
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'DQ Flag Catalog' = calculated
+		mode: import
+		source =
+				
+				DATATABLE(
+				    "Flag Key", INTEGER, "Table", STRING, "Column", STRING,
+				    "Flag Type", STRING, "Severity", STRING, "In DQ Score", BOOLEAN,
+				    {
+				        {1,  "fact_sales", "date_key / launch_date", "Pre-launch Sales", "High", TRUE},
+				        {2,  "fact_sales", "quantity", "Negative Quantity", "High", TRUE},
+				        {3,  "fact_sales", "unit_price", "Non-positive Price", "High", TRUE},
+				        {4,  "fact_sales", "sales_channel", "Missing Sales Channel", "Low", TRUE},
+				        {5,  "fact_sales", "invoice_number", "Missing Invoice Number", "Low", TRUE},
+				        {6,  "fact_sales", "sales_amount", "Amount Mismatch", "Critical", TRUE},
+				        {7,  "fact_interactions", "date_key / hire_date", "Pre-hire Interaction", "High", TRUE},
+				        {8,  "fact_interactions", "duration_minutes", "Negative Duration", "High", TRUE},
+				        {9,  "fact_interactions", "outcome", "Missing Outcome", "Low", TRUE},
+				        {10, "fact_event_registrations", "date_key / event start_date", "Registered After Event", "High", TRUE},
+				        {11, "fact_event_registrations", "attendance_status", "Missing Attendance Past Event", "Low", TRUE},
+				        {12, "fact_hcp_account_affiliation", "start_date / end_date", "Date Swap Applied", "Resolved", FALSE},
+				        {13, "fact_hcp_account_affiliation", "primary_affiliation", "Primary Overlap", "Critical", TRUE},
+				        {14, "fact_hcp_account_affiliation", "status / end_date", "Status/Date Mismatch", "Medium", TRUE},
+				        {15, "fact_campaign", "campaign_name", "Missing Name", "High", TRUE},
+				        {16, "fact_campaign", "campaign_type", "Missing Type", "Low", TRUE},
+				        {17, "fact_campaign", "status", "Missing Status", "High", TRUE},
+				        {18, "fact_campaign", "start_date / end_date", "Start After End", "High", TRUE},
+				        {19, "fact_campaign", "target_hcp_count", "Negative Target HCP", "Medium", TRUE},
+				        {20, "dim_event", "start_date / launch_date", "Pre-launch Event", "Informational", FALSE}
+				    }
+				)
+
+	annotation PBI_Id = 1fa92c67b5a44040acb370fb1ad4acd7
+

@@ -1,0 +1,109 @@
+table dim_account
+	lineageTag: 1c11a87f-cb8d-4759-87f3-f8a757068090
+
+	column account_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 4a6b20e7-e66b-4669-b340-05db0dae8047
+		summarizeBy: none
+		sourceColumn: account_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Account ID'
+		dataType: string
+		lineageTag: e63c8613-9ae2-469b-967f-926f3d8caf75
+		summarizeBy: none
+		sourceColumn: Account ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column Account
+		dataType: string
+		lineageTag: ef8f10cb-92e2-4c6c-b1dc-9c57e69d3640
+		summarizeBy: none
+		sourceColumn: Account
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Account Type'
+		dataType: string
+		lineageTag: 6f5dc2ea-c116-4f56-8d99-c7222198d9e2
+		summarizeBy: none
+		sourceColumn: Account Type
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Account City'
+		dataType: string
+		lineageTag: 0ba491db-c317-4424-9a4a-13ad3a9ab1e2
+		dataCategory: City
+		summarizeBy: none
+		sourceColumn: Account City
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Account Territory'
+		dataType: string
+		lineageTag: 80be3a24-655c-45d0-8aa6-bc8458453a8b
+		summarizeBy: none
+		sourceColumn: Account Territory
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Account Status'
+		dataType: string
+		lineageTag: d591bba9-4cb3-4674-8638-553e3fc66b2f
+		summarizeBy: none
+		sourceColumn: Account Status
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Parent Account ID'
+		dataType: string
+		lineageTag: 8a265105-1360-4bb7-9e01-27f5a4b56d16
+		summarizeBy: none
+		sourceColumn: Parent Account ID
+
+		annotation SummarizationSetBy = Automatic
+
+	hierarchy 'Account by Territory'
+		lineageTag: 4fe92423-0948-49df-b2db-ad88a87485b6
+
+		level 'Account Territory'
+			lineageTag: 97eac9dc-2645-4228-bb66-81d2cafa5686
+			column: 'Account Territory'
+
+		level Account
+			lineageTag: 255c34d6-7cc5-44ed-8821-dff51115095d
+			column: Account
+
+	hierarchy 'Account by Type'
+		lineageTag: 7635b0d8-2837-45cd-999f-214a0bf53363
+
+		level 'Account Type'
+			lineageTag: 2fdcc83f-6420-4b3c-b43b-8de9923f6dbb
+			column: 'Account Type'
+
+		level Account
+			lineageTag: c55fa925-261a-4b80-b6d8-50cc347b7be4
+			column: Account
+
+	partition dim_account = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Databases(pServer),
+				    New_Project_Healthcare_Pharma_Commercial = Source{[Name=pDatabase]}[Data],
+				    warehouse_dim_account = New_Project_Healthcare_Pharma_Commercial{[Schema="warehouse",Item="dim_account"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(warehouse_dim_account,{{"account_id", "Account ID"}, {"account_name", "Account"}, {"account_type", "Account Type"}, {"city", "Account City"}, {"territory", "Account Territory"}, {"status", "Account Status"}, {"parent_account_id", "Parent Account ID"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

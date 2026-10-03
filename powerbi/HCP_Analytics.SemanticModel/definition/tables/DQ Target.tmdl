@@ -1,0 +1,30 @@
+table 'DQ Target'
+	lineageTag: 77aa8dff-9a99-4be9-a893-624a0df7d1fd
+
+	/// Selected DQ target (default 95%).
+	measure 'DQ Target Value' = SELECTEDVALUE('DQ Target'[DQ Target], 0.95)
+		isHidden
+		lineageTag: 6b684b2c-abc8-4619-9392-f3277619915c
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'DQ Target'
+		lineageTag: 268de338-cacc-4161-9971-5c34f8433758
+		summarizeBy: none
+		sourceColumn: [Value]
+
+		extendedProperty ParameterMetadata =
+				{
+				  "version": 0
+				}
+
+		annotation SummarizationSetBy = User
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition 'DQ Target' = calculated
+		mode: import
+		source = GENERATESERIES(0.9, 1, 0.005)
+
+	annotation PBI_Id = a275b32243f342358324e14734ff7555
+

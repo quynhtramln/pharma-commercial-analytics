@@ -1,0 +1,49 @@
+table 'FP HCP View'
+	lineageTag: 340d8184-07f6-455c-9836-2a21d7159f61
+
+	column 'FP HCP View'
+		lineageTag: fb80d60c-174c-46e3-ab84-5de82e3022cd
+		summarizeBy: none
+		sourceColumn: [Value1]
+		sortByColumn: 'FP HCP View Order'
+
+		relatedColumnDetails
+			groupByColumn: 'FP HCP View Fields'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'FP HCP View Fields'
+		isHidden
+		lineageTag: 5f3745f4-7e32-47ae-b01f-4086088fa5a5
+		summarizeBy: none
+		sourceColumn: [Value2]
+		sortByColumn: 'FP HCP View Order'
+
+		extendedProperty ParameterMetadata =
+				{
+				  "version": 3,
+				  "kind": 2
+				}
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'FP HCP View Order'
+		isHidden
+		formatString: 0
+		lineageTag: a769ad3c-a506-4402-a398-eda0e898fbd0
+		summarizeBy: sum
+		sourceColumn: [Value3]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'FP HCP View' = calculated
+		mode: import
+		source =
+				{
+				    ("Specialty", NAMEOF('dim_hcp'[Specialty]), 0),
+				    ("HCP type", NAMEOF('dim_hcp'[HCP Type]), 1),
+				    ("Territory", NAMEOF('dim_hcp'[HCP Territory]), 2)
+				}
+
+	annotation PBI_Id = 5c97482745d347e0a37fc17822b07e0b
+

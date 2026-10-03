@@ -1,0 +1,30 @@
+table 'Sales Threshold'
+	lineageTag: 110a74bd-fd79-45ab-bf5d-1b66c437cdb4
+
+	/// Selected sales threshold multiplier applied to the median (default 1.0).
+	measure 'Sales Threshold Value' = SELECTEDVALUE('Sales Threshold'[Sales Threshold], 1)
+		isHidden
+		lineageTag: 40a7f362-1561-4c4a-9233-cf51488b6ebd
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Sales Threshold'
+		lineageTag: d47ecedb-abd9-4e88-9a60-4a698060a2fd
+		summarizeBy: none
+		sourceColumn: [Value]
+
+		extendedProperty ParameterMetadata =
+				{
+				  "version": 0
+				}
+
+		annotation SummarizationSetBy = User
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition 'Sales Threshold' = calculated
+		mode: import
+		source = GENERATESERIES(0.5, 2, 0.1)
+
+	annotation PBI_Id = d669b7ee9d6240bb8f691452433fc6c9
+

@@ -1,0 +1,76 @@
+table tbl_account_opportunity
+	lineageTag: e5c656bb-de88-455b-abbf-6854dfd56b24
+
+	column account_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 93ab1949-7411-402a-93ea-828e98a0a2a5
+		summarizeBy: none
+		sourceColumn: account_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Engagement Count'
+		dataType: int64
+		formatString: 0
+		lineageTag: c8e84e91-1917-4c85-9aca-0e29601c8428
+		summarizeBy: none
+		sourceColumn: Engagement Count
+
+		annotation SummarizationSetBy = User
+
+	column 'Account Sales (Mart)'
+		dataType: double
+		formatString: \$#,0;(\$#,0);\$#,0
+		lineageTag: 5e9bc6ae-05bb-4c66-b6af-75de2b7c7660
+		summarizeBy: none
+		sourceColumn: Account Sales (Mart)
+
+		annotation SummarizationSetBy = User
+
+	column median_engagement
+		dataType: double
+		lineageTag: 563320e6-51c8-46a1-a2fc-784e2d5cd7e9
+		summarizeBy: none
+		sourceColumn: median_engagement
+
+		annotation SummarizationSetBy = User
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column median_sales
+		dataType: double
+		lineageTag: 8d7b2167-cf0a-411e-a9a8-07d9bc8f2427
+		summarizeBy: none
+		sourceColumn: median_sales
+
+		annotation SummarizationSetBy = User
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Opportunity Quadrant'
+		dataType: string
+		lineageTag: ebf6258b-742d-4085-a193-4bc1e2cd7dac
+		summarizeBy: none
+		sourceColumn: Opportunity Quadrant
+
+		annotation SummarizationSetBy = Automatic
+
+	partition tbl_account_opportunity = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Databases(pServer),
+				    New_Project_Healthcare_Pharma_Commercial = Source{[Name=pDatabase]}[Data],
+				    mart_tbl_account_opportunity = New_Project_Healthcare_Pharma_Commercial{[Schema="mart",Item="tbl_account_opportunity"]}[Data],
+				    #"Renamed Columns" = Table.RenameColumns(mart_tbl_account_opportunity,{{"opportunity_quadrant", "Opportunity Quadrant"}, {"engagement_count", "Engagement Count"}, {"total_sales", "Account Sales (Mart)"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

@@ -1,0 +1,27 @@
+table Segment
+	lineageTag: ed2585a4-afb0-472f-848e-89da262cec17
+
+	column Segment
+		lineageTag: d3cb77f8-e308-4d60-839c-2dcacd7f8b05
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Segment]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Segment = calculated
+		mode: import
+		source =
+				
+				DISTINCT(
+				    SELECTCOLUMNS(
+				        UNION(
+				            VALUES(tbl_account_opportunity[Opportunity Quadrant]),
+				            VALUES(tbl_hcp_opportunity[Opportunity Quadrant])
+				        ),
+				        "Segment", [Opportunity Quadrant]
+				    )
+				)
+
+	annotation PBI_Id = 3c6b0b06604b4a459f3e2b67288a760d
+

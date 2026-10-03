@@ -1,0 +1,133 @@
+relationship 25e9e46a-1fb5-45a5-ad08-0373f567b58e
+	fromColumn: dim_event.product_key
+	toColumn: dim_product.product_key
+
+	annotation PBI_IsFromSource = FS
+
+relationship f02977bb-ed15-4e1c-8bf6-63e610b81fc6
+	fromColumn: fact_event_registrations.date_key
+	toColumn: dim_date.date_key
+
+	annotation PBI_IsFromSource = FS
+
+relationship d6d86592-0d7a-442a-ac90-1652fd142a14
+	fromColumn: fact_event_registrations.event_key
+	toColumn: dim_event.event_key
+
+	annotation PBI_IsFromSource = FS
+
+relationship 9ac2ee87-3c5b-489e-bb2b-8e84f311ce14
+	fromColumn: fact_event_registrations.hcp_key
+	toColumn: dim_hcp.hcp_key
+
+	annotation PBI_IsFromSource = FS
+
+relationship 6c2a3d64-fc5c-402d-956c-4b2526e98ece
+	isActive: false
+	fromColumn: fact_campaign.end_date_key
+	toColumn: dim_date.date_key
+
+	annotation PBI_IsFromSource = FS
+
+relationship 560a29ef-8109-4f61-8071-454de19172ae
+	fromColumn: fact_campaign.start_date_key
+	toColumn: dim_date.date_key
+
+	annotation PBI_IsFromSource = FS
+
+relationship 064d4592-c4aa-44de-b363-eacb57478621
+	fromColumn: fact_campaign.product_key
+	toColumn: dim_product.product_key
+
+	annotation PBI_IsFromSource = FS
+
+relationship a4255614-df15-455b-bb0a-50783508f374
+	fromColumn: fact_hcp_account_affiliation.account_key
+	toColumn: dim_account.account_key
+
+	annotation PBI_IsFromSource = FS
+
+relationship 8862b4ce-4251-4276-8a2c-310911666d03
+	fromColumn: fact_hcp_account_affiliation.hcp_key
+	toColumn: dim_hcp.hcp_key
+
+	annotation PBI_IsFromSource = FS
+
+relationship 11f812db-fa17-408c-a866-e361a9f71ed9
+	fromColumn: fact_interactions.account_key
+	toColumn: dim_account.account_key
+
+	annotation PBI_IsFromSource = FS
+
+relationship 4fd09571-b98a-48fb-b32b-2509756087a5
+	fromColumn: fact_interactions.date_key
+	toColumn: dim_date.date_key
+
+	annotation PBI_IsFromSource = FS
+
+relationship e44f68c7-ed42-4e38-b164-30eb09727a24
+	fromColumn: fact_interactions.rep_key
+	toColumn: dim_field_rep.rep_key
+
+	annotation PBI_IsFromSource = FS
+
+relationship f234713e-a660-4d53-bc22-bbdc97956bd8
+	fromColumn: fact_interactions.hcp_key
+	toColumn: dim_hcp.hcp_key
+
+	annotation PBI_IsFromSource = FS
+
+relationship ffca51b9-9be7-43d1-9188-dc3fa8065d0b
+	fromColumn: fact_interactions.product_key
+	toColumn: dim_product.product_key
+
+	annotation PBI_IsFromSource = FS
+
+relationship 9a4042a2-71b1-48e2-8db8-26cb32ecb073
+	fromColumn: fact_sales.account_key
+	toColumn: dim_account.account_key
+
+	annotation PBI_IsFromSource = FS
+
+relationship 8c259a87-1a3a-461c-b4f0-5b084b72f6a8
+	fromColumn: fact_sales.date_key
+	toColumn: dim_date.date_key
+
+	annotation PBI_IsFromSource = FS
+
+relationship f8d76f67-eb42-43b7-b658-5930da91d169
+	fromColumn: fact_sales.product_key
+	toColumn: dim_product.product_key
+
+	annotation PBI_IsFromSource = FS
+
+relationship 42d82479-78e8-d369-986d-c353d9ba652a
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: dim_account.account_key
+	toColumn: tbl_account_growth.account_key
+
+relationship 21dac1e0-abfd-7ed0-f7a8-2dfff27049d1
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: dim_product.product_key
+	toColumn: tbl_product_momentum.product_key
+
+relationship d4102ed3-6107-dd19-ee47-5b42876fc4c3
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: dim_field_rep.rep_key
+	toColumn: tbl_rep_coverage.rep_key
+
+relationship c4a4e84b-e8c1-a75e-66ea-57c4d1a0482c
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: dim_account.account_key
+	toColumn: tbl_account_opportunity.account_key
+
+relationship 09e668f5-e671-281a-b987-43930f02fb7f
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: dim_hcp.hcp_key
+	toColumn: tbl_hcp_opportunity.hcp_key
+
